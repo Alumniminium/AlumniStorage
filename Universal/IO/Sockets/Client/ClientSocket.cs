@@ -20,7 +20,7 @@ namespace Universal.IO.Sockets.Client
         public bool IsConnected;
         public bool UseCompression { get; set; }
 
-        internal readonly NeutralBuffer Buffer;
+        public readonly NeutralBuffer Buffer;
         internal readonly AutoResetEvent SendSync = new AutoResetEvent(true);
         internal readonly AutoResetEvent ReceiveSync = new AutoResetEvent(false);
         internal readonly SocketAsyncEventArgs ReceiveArgs;

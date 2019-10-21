@@ -53,7 +53,7 @@ public static class PacketRouter
             var fileSize = fileStream.Length;
             // Make the chunks as big as possible, let the TCP Stack do the rest
             // Preserve 128 + 24 bytes for Header information (128 bytes for filename, 24 bytes for header info).
-            var chunk = new byte[100_000 - (128 + 40)];
+            var chunk = new byte[user.Buffer.SendBuffer.Length - (128 + 40)];
 
             while (fileStream.Position != fileStream.Length)
             {

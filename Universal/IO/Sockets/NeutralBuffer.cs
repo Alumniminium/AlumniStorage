@@ -10,7 +10,7 @@ namespace Universal.IO.Sockets
         public int BytesRequired { get; set; }
         public int BytesProcessed { get; set; }
 
-        public NeutralBuffer(int receiveBufferSize = 100_000, int sendBufferSize = 100_000)
+        public NeutralBuffer(int receiveBufferSize = 1_000_000, int sendBufferSize = 1_000_000)
         {
             ReceiveBuffer = new byte[receiveBufferSize];
             SendBuffer = new byte[sendBufferSize];

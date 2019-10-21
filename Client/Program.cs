@@ -15,6 +15,8 @@ namespace Client
     public static class Program
     {
         public static string ServerHostname = "localhost";
+        //public static ushort ServerPort = 65533;
+        public static ushort ServerPort = 70;
         public static ClientSocket Client = new ClientSocket(null);
 
         public static void Main()
@@ -32,11 +34,11 @@ namespace Client
             {
                 Console.WriteLine("Socket disconnected!");
                 Client = new ClientSocket(null);
-                Client.ConnectAsync(ipList[0].ToString(), 65533);
+                Client.ConnectAsync(ipList[0].ToString(), ServerPort);
             };
 
             Thread.Sleep(1000);
-            Client.ConnectAsync(ipList[0].ToString(), 65533);
+            Client.ConnectAsync(ipList[0].ToString(), ServerPort);
 
             while (true)
             {
@@ -48,7 +50,8 @@ namespace Client
                         break;
                     case "send":
                         Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", false, MsgLoginType.Login));
-                        PacketRouter.SendFile(Client, "/home/alumni/Downloads/ct.exe");
+                        //PacketRouter.SendFile(Client, "/home/alumni/Downloads/ct.exe");
+                        PacketRouter.SendFile(Client, @"C:\Users\domi\Desktop\2u5bccouzxp31.png");
                         break;
                     default:
                         var buffer = Encoding.UTF8.GetBytes(msg);
