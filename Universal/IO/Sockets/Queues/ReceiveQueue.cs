@@ -83,18 +83,7 @@ namespace Universal.IO.Sockets.Queues
             connection.Buffer.BytesInBuffer = 0;
         }
 
-        private static void Decompress(ClientSocket connection)
-        {
-            var compressedArray = new byte[connection.Buffer.BytesRequired];
-            connection.Buffer.MergeBuffer.VectorizedCopy(MIN_HEADER_SIZE, compressedArray, 0, compressedArray.Length - MIN_HEADER_SIZE);
-
-            using (var compressedStream = new MemoryStream(compressedArray))
-            using (var deflateStream = new DeflateStream(compressedStream, CompressionMode.Decompress))
-            {
-                deflateStream.Read(connection.Buffer.MergeBuffer, 0, connection.Buffer.MergeBuffer.Length);
-            }
-        }
-
+        private static void Decompress(ClientSocket connection) => connection.Buffer.ReceiveDeflateStream.Read(connection.Buffer.MergeBuffer, 0, connection.Buffer.MergeBuffer.Length);
 
         private static unsafe void MergeUnsafe(SocketAsyncEventArgs e, bool header = false)
         {

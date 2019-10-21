@@ -32,14 +32,14 @@ namespace Universal.IO.Sockets.Queues
                 var packet = e.packet;
                 var size = packet.Length;
                 if (connection.UseCompression && !e.dontCompress)
-                    size = Compress(ref packet);
+                    size = Compress(connection, ref packet);
 
                 e.Item1.SetBuffer(packet, 0, size);
                 if (!connection.Socket.SendAsync(e.Item1))
                     connection.SendSync.Set();
             }
         }
-        private static int Compress(ref byte[] packet)
+        private static int Compress(ClientSocket client, ref byte[] packet)
         {
             using (var ms = new MemoryStream())
             using (var cp = new DeflateStream(ms, CompressionMode.Compress))
@@ -52,6 +52,7 @@ namespace Universal.IO.Sockets.Queues
                 packet = ms.ToArray();
                 return packet.Length;
             }
+
         }
     }
 }

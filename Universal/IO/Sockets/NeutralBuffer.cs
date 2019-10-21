@@ -1,7 +1,14 @@
+using System.IO;
+using System.IO.Compression;
+
 namespace Universal.IO.Sockets
 {
     public class NeutralBuffer
     {
+        public readonly MemoryStream ReceiveMemoryStream;
+        public readonly MemoryStream SendMemoryStream;
+        public readonly DeflateStream ReceiveDeflateStream;
+        public readonly DeflateStream SendDeflateStream;
         public readonly byte[] ReceiveBuffer;
         public readonly byte[] SendBuffer;
         public readonly byte[] MergeBuffer;
@@ -15,6 +22,10 @@ namespace Universal.IO.Sockets
             ReceiveBuffer = new byte[receiveBufferSize];
             SendBuffer = new byte[sendBufferSize];
             MergeBuffer = new byte[receiveBufferSize];
+            ReceiveMemoryStream = new MemoryStream(ReceiveBuffer);
+            SendMemoryStream = new MemoryStream(SendBuffer);
+            ReceiveDeflateStream = new DeflateStream(ReceiveMemoryStream, CompressionMode.Decompress);
+            SendDeflateStream = new DeflateStream(SendMemoryStream, CompressionMode.Compress);
         }
     }
 }
