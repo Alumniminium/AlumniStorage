@@ -42,8 +42,6 @@ namespace Universal.IO.Sockets.Client
             ReceiveArgs.UserToken = this;
         }
 
-
-
         public void ConnectAsync(string host, ushort port)
         {
             try

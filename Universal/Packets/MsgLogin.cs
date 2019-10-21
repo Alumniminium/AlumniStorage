@@ -12,7 +12,7 @@ namespace Universal.Packets
         public const int MAX_PASSWORD_LENGTH = 32;
         public const int MAX_EMAIL_LENGTH = 32;
 
-        public short Length { get; private set; }
+        public int Length { get; private set; }
         public PacketType Id { get; private set; }
         public int UniqueId { get; set; }
         public bool ClientSupportCompression { get; set; }

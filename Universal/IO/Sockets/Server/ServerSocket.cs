@@ -81,7 +81,6 @@ namespace Universal.IO.Sockets.Server
             else
                 CloseClientSocket(e);
         }
-
         private static void CloseClientSocket(SocketAsyncEventArgs e)
         {
             var token = (ClientSocket)e.UserToken;

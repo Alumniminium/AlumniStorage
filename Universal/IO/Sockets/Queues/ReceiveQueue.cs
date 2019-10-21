@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using Universal.Extensions;
@@ -15,7 +14,7 @@ namespace Universal.IO.Sockets.Queues
         public static Action<ClientSocket, byte[]> OnPacket;
         private static readonly BlockingCollection<SocketAsyncEventArgs> _queue = new BlockingCollection<SocketAsyncEventArgs>();
         private static Thread _workerThread;
-        private const int MIN_HEADER_SIZE = 2;
+        private const int MIN_HEADER_SIZE = 3;
 
         static ReceiveQueue()
         {
@@ -64,7 +63,7 @@ namespace Universal.IO.Sockets.Queues
         {
             var receivedBytes = e.BytesTransferred - connection.Buffer.BytesProcessed;
             if (receivedBytes >= MIN_HEADER_SIZE)
-                connection.Buffer.BytesRequired = BitConverter.ToInt16(e.Buffer, connection.Buffer.BytesProcessed);
+                connection.Buffer.BytesRequired = BitConverter.ToInt32(e.Buffer, connection.Buffer.BytesProcessed);
         }
 
         private static void ReadHeader(SocketAsyncEventArgs e, ClientSocket connection)
@@ -72,7 +71,7 @@ namespace Universal.IO.Sockets.Queues
             if (connection.Buffer.BytesInBuffer < MIN_HEADER_SIZE)
                 MergeUnsafe(e, true);
             else
-                connection.Buffer.BytesRequired = BitConverter.ToInt16(connection.Buffer.MergeBuffer, 0);
+                connection.Buffer.BytesRequired = BitConverter.ToInt32(connection.Buffer.MergeBuffer, 0);
         }
 
         private static void FinishPacket(ClientSocket connection)

@@ -1,12 +1,61 @@
 ﻿using System;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Universal.IO.Sockets.Client;
+using Universal.IO.Sockets.Queues;
+using Universal.Packets;
+using Universal.Packets.Enums;
 
 namespace Client
 {
-    class Program
+    public static class Program
     {
-        static void Main(string[] args)
+        public static string ServerHostname = "localhost";
+        public static ClientSocket Client = new ClientSocket(null);
+
+        public static void Main()
         {
-            Console.WriteLine("Hello World!");
+            ServerHostname = "localhost";
+
+            var ipList = Dns.GetHostAddresses(ServerHostname).Where(i => i.AddressFamily == AddressFamily.InterNetwork).ToArray();
+            foreach (var ip in ipList)
+                Console.WriteLine(ip.ToString());
+
+            Client.OnConnected += () => Console.WriteLine("Socket Connected!");
+            ReceiveQueue.OnPacket += PacketRouter.Handle;
+
+            Client.OnDisconnect += () =>
+            {
+                Console.WriteLine("Socket disconnected!");
+                Client = new ClientSocket(null);
+                Client.ConnectAsync(ipList[0].ToString(), 65533);
+            };
+
+            Thread.Sleep(1000);
+            Client.ConnectAsync(ipList[0].ToString(), 65533);
+
+            while (true)
+            {
+                var msg = Console.ReadLine();
+
+                switch (msg)
+                {
+                    case null:
+                        break;
+                    case "send":
+                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", false, MsgLoginType.Login));
+                        PacketRouter.SendFile(Client, "/home/alumni/Downloads/ct.exe");
+                        break;
+                    default:
+                        var buffer = Encoding.UTF8.GetBytes(msg);
+                        Client.Send(buffer);
+                        break;
+                }
+            }
         }
     }
 }
