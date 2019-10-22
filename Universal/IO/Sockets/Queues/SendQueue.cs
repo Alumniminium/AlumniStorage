@@ -14,6 +14,7 @@ namespace Universal.IO.Sockets.Queues
     {
         private static readonly BlockingCollection<(SocketAsyncEventArgs, byte[] packet, bool dontCompress)> Queue = new BlockingCollection<(SocketAsyncEventArgs, byte[] packet, bool dontCompress)>();
         private static Thread _workerThread;
+        private static int COMPRESSION_FLAG_OFFSET = 4;
 
         static SendQueue()
         {
@@ -34,7 +35,7 @@ namespace Universal.IO.Sockets.Queues
                 connection.SendSync.WaitOne();
 
                 packet.VectorizedCopy(0, connection.Buffer.SendBuffer, 0, size);
-                if (packet[5] == 1)
+                if (packet[COMPRESSION_FLAG_OFFSET] == 1)
                     size = connection.Buffer.Compress(size);
 
 

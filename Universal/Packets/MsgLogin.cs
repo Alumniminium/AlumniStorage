@@ -4,13 +4,7 @@ using Universal.Extensions;
 using Universal.Packets.Enums;
 
 namespace Universal.Packets
-{   [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct MsgHeader
-    {
-        public int Length { get; set; }
-        public bool Compressed { get; set; }
-        public PacketType Id { get; set; }
-    }
+{
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct MsgLogin
     {
@@ -18,7 +12,7 @@ namespace Universal.Packets
         public const int MAX_PASSWORD_LENGTH = 32;
         public const int MAX_EMAIL_LENGTH = 32;
 
-        public MsgHeader Header {get;set;}
+        public MsgHeader Header { get; set; }
         public int UniqueId { get; set; }
         public MsgLoginType Type { get; set; }
 
@@ -65,9 +59,10 @@ namespace Universal.Packets
         {
             Span<MsgLogin> span = stackalloc MsgLogin[1];
             ref var ptr = ref MemoryMarshal.GetReference(span);
-            ptr.Header = new MsgHeader{
+            ptr.Header = new MsgHeader
+            {
                 Length = sizeof(MsgLogin),
-                Compressed = false,
+                Compressed = compression,
                 Id = PacketType.MsgLogin,
             };
             ptr.Type = type;

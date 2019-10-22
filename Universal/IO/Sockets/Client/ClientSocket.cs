@@ -26,11 +26,10 @@ namespace Universal.IO.Sockets.Client
         internal readonly SocketAsyncEventArgs ReceiveArgs;
         internal readonly SocketAsyncEventArgs SendArgs;
 
-        public ClientSocket(int bufferSize = 1_000_000,object stateObject =null, bool useCompression = true)
+        public ClientSocket(int bufferSize = 1_000_000,object stateObject =null)
         {
             Buffer = new NeutralBuffer(bufferSize);
             StateObject = stateObject;
-            UseCompression = useCompression;
 
             SendArgs = new SocketAsyncEventArgs();
             SendArgs.UserToken = this;

@@ -7,7 +7,7 @@ public static class PacketRouter
 {
     public static void Handle(ClientSocket clientSocket, byte[] packet)
     {
-        var packetId = packet[4];
+        var packetId = packet[5];
         var user = (User)clientSocket.StateObject;
         switch (packetId)
         {
@@ -29,6 +29,7 @@ public static class PacketRouter
         using (var reader = new BinaryReader(new MemoryStream(packet)))
         {
             var packetSize = reader.ReadInt32();
+            var compressed = reader.ReadBoolean();
             var packetId = reader.ReadByte();
             var fileName = reader.ReadString();
             user.CurrentFileName = fileName.Trim();
@@ -64,6 +65,7 @@ public static class PacketRouter
                         // [Offset 0] Advance by 2 bytes, first two bytes are packet size, calculated at the end.
                         writer.Seek(4, SeekOrigin.Current);
                         // [Offset 2] Packet Id, 3000 = FileTransfer
+                        writer.Write((byte)1);//compression
                         writer.Write((byte)3);
                         // [Offset 4]
                         writer.Write(Path.GetFileName(fileName));

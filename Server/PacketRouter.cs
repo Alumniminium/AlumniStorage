@@ -13,7 +13,7 @@ namespace Server
     {
         public static void Handle(ClientSocket clientSocket, byte[] packet)
         {
-            var packetId = packet[4];
+            var packetId = packet[5];
             var user = (User)clientSocket.StateObject;
             switch (packetId)
             {
@@ -58,6 +58,7 @@ namespace Server
             using (var reader = new BinaryReader(new MemoryStream(packet)))
             {
                 var packetSize = reader.ReadInt32();
+                var compressed = reader.ReadBoolean();
                 var packetId = reader.ReadByte();
                 var fileName = reader.ReadString();
                 user.CurrentFileName = fileName.Trim();
@@ -94,6 +95,7 @@ namespace Server
                     using (var writer = new BinaryWriter(memoryStream))
                     {
                         writer.Seek(4, SeekOrigin.Current);
+                        writer.Write((byte)1);
                         writer.Write((byte)3);
                         writer.Write(Path.GetFileName(fileName));
                         writer.Write(fileStream.Position == 0);

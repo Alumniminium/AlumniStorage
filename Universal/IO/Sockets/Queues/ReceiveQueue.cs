@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Threading;
 using Universal.Extensions;
 using Universal.IO.Sockets.Client;
+using Universal.Packets;
 
 namespace Universal.IO.Sockets.Queues
 {
@@ -14,7 +15,8 @@ namespace Universal.IO.Sockets.Queues
         public static Action<ClientSocket, byte[]> OnPacket;
         private static readonly BlockingCollection<SocketAsyncEventArgs> _queue = new BlockingCollection<SocketAsyncEventArgs>();
         private static Thread _workerThread;
-        private const int MIN_HEADER_SIZE = 4;
+        private static int MIN_HEADER_SIZE = MsgHeader.SIZE;
+        private static int COMPRESSION_FLAG_OFFSET = 4;
 
         static ReceiveQueue()
         {
@@ -76,7 +78,7 @@ namespace Universal.IO.Sockets.Queues
 
         private static void FinishPacket(ClientSocket connection)
         {
-            if (connection.Buffer.MergeBuffer[5]==1)
+            if (connection.Buffer.MergeBuffer[COMPRESSION_FLAG_OFFSET]==1)
                 connection.Buffer.Decompress();
 
             OnPacket?.Invoke(connection, connection.Buffer.MergeBuffer);

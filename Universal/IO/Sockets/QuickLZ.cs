@@ -70,9 +70,6 @@ namespace Universal.IO
             int last_matchstart = (size - UNCONDITIONAL_MATCHLEN - UNCOMPRESSED_END - 1);
             int lits = 0;
 
-            if (level != 1 && level != 3)
-                throw new ArgumentException("C# version only supports level 1 and 3");
-
             if (level == 1)
                 hashtable = new int[HASH_VALUES, QLZ_POINTERS_1];
             else
