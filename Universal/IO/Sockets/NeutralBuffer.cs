@@ -24,20 +24,17 @@ namespace Universal.IO.Sockets
         internal void Decompress()
         {
             var chunk = MergeBuffer.AsSpan().Slice(4,BytesRequired);
-            var decompressed = QuickLZ.decompress(chunk.ToArray());
+            var decompressed = QuickLZ.decompress(chunk);
             Array.Copy(decompressed,0,MergeBuffer,0,decompressed.Length);
         }
 
         internal int Compress(int size)
         {
-            var chunk = SendBuffer.AsSpan().Slice(0,size);
-            var compressedChunk = QuickLZ.compress(chunk.ToArray(),3);
-            var packet = new byte[compressedChunk.Length +4];
-            var sizeBytes = BitConverter.GetBytes(packet.Length);
-            Array.Copy(sizeBytes,0,packet,0,sizeBytes.Length);
-            Array.Copy(compressedChunk,0,packet,4,compressedChunk.Length);
-            Array.Copy(packet,0,SendBuffer,0,packet.Length);
-            return packet.Length;
+            var compressedChunk = QuickLZ.compress(SendBuffer,size,3);
+            var sizeBytes = BitConverter.GetBytes(compressedChunk.Length +4);
+            Array.Copy(sizeBytes,0,SendBuffer,0,sizeBytes.Length);
+            Array.Copy(compressedChunk,0,SendBuffer,4,compressedChunk.Length);
+            return compressedChunk.Length +4;
         }        
     }
 }

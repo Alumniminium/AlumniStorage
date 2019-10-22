@@ -76,7 +76,7 @@ namespace Universal.IO.Sockets.Queues
 
         private static void FinishPacket(ClientSocket connection)
         {
-            if (connection.UseCompression)
+            if (connection.Buffer.MergeBuffer[5]==1)
                 connection.Buffer.Decompress();
 
             OnPacket?.Invoke(connection, connection.Buffer.MergeBuffer);

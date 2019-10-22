@@ -18,7 +18,6 @@ namespace Universal.IO.Sockets.Client
         public Socket Socket;
         public object StateObject;
         public bool IsConnected;
-        public bool UseCompression { get;set;}
         public int BufferSize => Buffer.MergeBuffer.Length;
 
         internal readonly NeutralBuffer Buffer;

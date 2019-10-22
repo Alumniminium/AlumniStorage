@@ -36,8 +36,7 @@ namespace Server
             var msgLogin = (MsgLogin)packet;
             var username = msgLogin.GetUsername();
             var password = msgLogin.GetPassword();
-            userSocket.UseCompression = msgLogin.ClientSupportCompression;
-            FConsole.WriteLine($"MsgLogin: {username} with password {password} (compress: {userSocket.UseCompression}) requesting login.");
+            FConsole.WriteLine($"MsgLogin: {username} with password {password} (compressed: {msgLogin.Header.Compressed}) requesting login.");
 
             var user = new User
             {

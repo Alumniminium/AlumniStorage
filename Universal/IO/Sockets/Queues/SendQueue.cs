@@ -32,12 +32,11 @@ namespace Universal.IO.Sockets.Queues
                 var size = packet.Length;
 
                 connection.SendSync.WaitOne();
-                
-                packet.VectorizedCopy(0,connection.Buffer.SendBuffer,0,size);
 
-                if (connection.UseCompression && !e.dontCompress)
+                packet.VectorizedCopy(0, connection.Buffer.SendBuffer, 0, size);
+                if (packet[5] == 1)
                     size = connection.Buffer.Compress(size);
-                    
+
 
                 e.Item1.SetBuffer(connection.Buffer.SendBuffer, 0, size);
                 if (!connection.Socket.SendAsync(e.Item1))

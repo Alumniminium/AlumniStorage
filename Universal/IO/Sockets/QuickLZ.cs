@@ -24,12 +24,12 @@ namespace Universal.IO
         private const int QLZ_POINTERS_1 = 1;
         private const int QLZ_POINTERS_3 = 16;
 
-        private static int headerLen(byte[] source)
+        private static int headerLen(Span<byte> source)
         {
             return ((source[0] & 2) == 2) ? 9 : 3;
         }
 
-        public static int sizeDecompressed(byte[] source)
+        public static int sizeDecompressed(Span<byte> source)
         {
             if (headerLen(source) == 9)
                 return source[5] | (source[6] << 8) | (source[7] << 16) | (source[8] << 24);
@@ -55,19 +55,19 @@ namespace Universal.IO
             fast_write(dst, 5, size_compressed, 4);
         }
 
-        public static byte[] compress(byte[] source, int level)
+        public static byte[] compress(byte[] source,int size, int level)
         {
             int src = 0;
             int dst = DEFAULT_HEADERLEN + CWORD_LEN;
             uint cword_val = 0x80000000;
             int cword_ptr = DEFAULT_HEADERLEN;
-            byte[] destination = new byte[source.Length + 400];
+            byte[] destination = new byte[size + 400];
             int[,] hashtable;
             int[] cachetable = new int[HASH_VALUES];
             byte[] hash_counter = new byte[HASH_VALUES];
             byte[] d2;
             int fetch = 0;
-            int last_matchstart = (source.Length - UNCONDITIONAL_MATCHLEN - UNCOMPRESSED_END - 1);
+            int last_matchstart = (size - UNCONDITIONAL_MATCHLEN - UNCOMPRESSED_END - 1);
             int lits = 0;
 
             if (level != 1 && level != 3)
@@ -78,7 +78,7 @@ namespace Universal.IO
             else
                 hashtable = new int[HASH_VALUES, QLZ_POINTERS_3];
 
-            if (source.Length == 0)
+            if (size == 0)
                 return new byte[0];
 
             if (src <= last_matchstart)
@@ -88,11 +88,11 @@ namespace Universal.IO
             {
                 if ((cword_val & 1) == 1)
                 {
-                    if (src > source.Length >> 1 && dst > src - (src >> 5))
+                    if (src > size >> 1 && dst > src - (src >> 5))
                     {
-                        d2 = new byte[source.Length + DEFAULT_HEADERLEN];
-                        write_header(d2, level, false, source.Length, source.Length + DEFAULT_HEADERLEN);
-                        System.Array.Copy(source, 0, d2, DEFAULT_HEADERLEN, source.Length);
+                        d2 = new byte[size + DEFAULT_HEADERLEN];
+                        write_header(d2, level, false, size, size + DEFAULT_HEADERLEN);
+                        System.Array.Copy(source, 0, d2, DEFAULT_HEADERLEN, size);
                         return d2;
                     }
 
@@ -124,7 +124,7 @@ namespace Universal.IO
                         else
                         {
                             int old_src = src;
-                            int remaining = ((source.Length - UNCOMPRESSED_END - src + 1 - 1) > 255 ? 255 : (source.Length - UNCOMPRESSED_END - src + 1 - 1));
+                            int remaining = ((size - UNCOMPRESSED_END - src + 1 - 1) > 255 ? 255 : (size - UNCOMPRESSED_END - src + 1 - 1));
 
                             src += 4;
                             if (source[o + src - old_src] == source[src])
@@ -176,7 +176,7 @@ namespace Universal.IO
                     int o, offset2;
                     int matchlen, k, m, best_k = 0;
                     byte c;
-                    int remaining = ((source.Length - UNCOMPRESSED_END - src + 1 - 1) > 255 ? 255 : (source.Length - UNCOMPRESSED_END - src + 1 - 1));
+                    int remaining = ((size - UNCOMPRESSED_END - src + 1 - 1) > 255 ? 255 : (size - UNCOMPRESSED_END - src + 1 - 1));
                     int hash = ((fetch >> 12) ^ fetch) & (HASH_VALUES - 1);
 
                     c = hash_counter[hash];
@@ -254,7 +254,7 @@ namespace Universal.IO
                     }
                 }
             }
-            while (src <= source.Length - 1)
+            while (src <= size - 1)
             {
                 if ((cword_val & 1) == 1)
                 {
@@ -274,7 +274,7 @@ namespace Universal.IO
                 cword_val = (cword_val >> 1);
             }
             fast_write(destination, cword_ptr, (int)((cword_val >> 1) | 0x80000000), CWORD_LEN);
-            write_header(destination, level, true, source.Length, dst);
+            write_header(destination, level, true, size, dst);
             d2 = new byte[dst];
             System.Array.Copy(destination, d2, dst);
             return d2;
@@ -287,7 +287,7 @@ namespace Universal.IO
                 a[i + j] = (byte)(value >> (j * 8));
         }
 
-        public static byte[] decompress(byte[] source)
+        public static byte[] decompress(Span<byte> source)
         {
             int level;
             int size = sizeDecompressed(source);
@@ -304,13 +304,11 @@ namespace Universal.IO
 
             level = (source[0] >> 2) & 0x3;
 
-            if (level != 1 && level != 3)
-                throw new ArgumentException("C# version only supports level 1 and 3");
-
             if ((source[0] & 1) != 1)
             {
                 byte[] d2 = new byte[size];
-                System.Array.Copy(source, headerLen(source), d2, 0, size);
+                System.Array.Copy(source.ToArray(), headerLen(source), d2, 0, size);
+                #warning fix source.ToArray()
                 return d2;
             }
 
