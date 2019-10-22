@@ -18,17 +18,18 @@ namespace Universal.IO.Sockets.Client
         public Socket Socket;
         public object StateObject;
         public bool IsConnected;
-        public bool UseCompression { get; set; }
+        public bool UseCompression { get;set;}
+        public int BufferSize => Buffer.MergeBuffer.Length;
 
-        public readonly NeutralBuffer Buffer;
+        internal readonly NeutralBuffer Buffer;
         internal readonly AutoResetEvent SendSync = new AutoResetEvent(true);
         internal readonly AutoResetEvent ReceiveSync = new AutoResetEvent(false);
         internal readonly SocketAsyncEventArgs ReceiveArgs;
         internal readonly SocketAsyncEventArgs SendArgs;
 
-        public ClientSocket(object stateObject, bool useCompression = true)
+        public ClientSocket(int bufferSize = 1_000_000,object stateObject =null, bool useCompression = true)
         {
-            Buffer = new NeutralBuffer();
+            Buffer = new NeutralBuffer(bufferSize);
             StateObject = stateObject;
             UseCompression = useCompression;
 

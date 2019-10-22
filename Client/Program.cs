@@ -15,9 +15,8 @@ namespace Client
     public static class Program
     {
         public static string ServerHostname = "localhost";
-        //public static ushort ServerPort = 65533;
-        public static ushort ServerPort = 70;
-        public static ClientSocket Client = new ClientSocket(null);
+        public static ushort ServerPort = 65533;
+        public static ClientSocket Client = new ClientSocket();
 
         public static void Main()
         {
@@ -33,7 +32,7 @@ namespace Client
             Client.OnDisconnect += () =>
             {
                 Console.WriteLine("Socket disconnected!");
-                Client = new ClientSocket(null);
+                Client = new ClientSocket();
                 Client.ConnectAsync(ipList[0].ToString(), ServerPort);
             };
 
@@ -49,9 +48,14 @@ namespace Client
                     case null:
                         break;
                     case "send":
-                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", false, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
                         //PacketRouter.SendFile(Client, "/home/alumni/Downloads/ct.exe");
-                        PacketRouter.SendFile(Client, @"C:\Users\domi\Desktop\2u5bccouzxp31.png");
+                        PacketRouter.SendFile(Client, @"C:\Users\domi\Desktop\1509829515646.png");
                         break;
                     default:
                         var buffer = Encoding.UTF8.GetBytes(msg);

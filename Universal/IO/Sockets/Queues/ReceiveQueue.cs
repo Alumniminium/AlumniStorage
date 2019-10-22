@@ -14,7 +14,7 @@ namespace Universal.IO.Sockets.Queues
         public static Action<ClientSocket, byte[]> OnPacket;
         private static readonly BlockingCollection<SocketAsyncEventArgs> _queue = new BlockingCollection<SocketAsyncEventArgs>();
         private static Thread _workerThread;
-        private const int MIN_HEADER_SIZE = 3;
+        private const int MIN_HEADER_SIZE = 4;
 
         static ReceiveQueue()
         {
@@ -77,14 +77,11 @@ namespace Universal.IO.Sockets.Queues
         private static void FinishPacket(ClientSocket connection)
         {
             if (connection.UseCompression)
-                Decompress(connection);
+                connection.Buffer.Decompress();
 
             OnPacket?.Invoke(connection, connection.Buffer.MergeBuffer);
             connection.Buffer.BytesInBuffer = 0;
         }
-
-        private static void Decompress(ClientSocket connection) => connection.Buffer.ReceiveDeflateStream.Read(connection.Buffer.MergeBuffer, 0, connection.Buffer.MergeBuffer.Length);
-
         private static unsafe void MergeUnsafe(SocketAsyncEventArgs e, bool header = false)
         {
             var connection = (ClientSocket)e.UserToken;
