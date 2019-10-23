@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.IO.Compression;
 using System.Net.Sockets;
 using System.Threading;
-using Universal.Extensions;
+using System.Threading.Channels;
 using Universal.IO.Sockets.Client;
 using Universal.Packets;
 
@@ -12,14 +9,18 @@ namespace Universal.IO.Sockets.Queues
 {
     public static class ReceiveQueue
     {
-        public static Action<ClientSocket, byte[]> OnPacket;
-        private static readonly BlockingCollection<SocketAsyncEventArgs> _queue = new BlockingCollection<SocketAsyncEventArgs>();
         private static Thread _workerThread;
         private static int MIN_HEADER_SIZE = MsgHeader.SIZE;
         private static int COMPRESSION_FLAG_OFFSET = 4;
+        public static Action<ClientSocket, byte[]> OnPacket;
+        private static ChannelWriter<SocketAsyncEventArgs> _writer;
+        private static ChannelReader<SocketAsyncEventArgs> _reader;
 
         static ReceiveQueue()
         {
+            var channel = Channel.CreateUnbounded<SocketAsyncEventArgs>(new UnboundedChannelOptions() { SingleReader = true });
+            _reader = channel.Reader;
+            _writer = channel.Writer;
             _workerThread = new Thread(WorkLoop)
             {
                 IsBackground = true,
@@ -27,15 +28,17 @@ namespace Universal.IO.Sockets.Queues
             };
             _workerThread.Start();
         }
-
-        public static void Add(SocketAsyncEventArgs e) => _queue.Add(e);
-
-        private static void WorkLoop()
+        public static void Add(SocketAsyncEventArgs e) => _writer.TryWrite(e);
+        public static async void WorkLoop()
         {
-            foreach (var e in _queue.GetConsumingEnumerable())
+            while (await _reader.WaitToReadAsync())
             {
-                AssemblePacket(e);
-                ((ClientSocket)e.UserToken).ReceiveSync.Set();
+                // Fast loop around available jobs
+                while (_reader.TryRead(out var e))
+                {
+                    AssemblePacket(e);
+                    ((ClientSocket)e.UserToken).ReceiveSync.Set();
+                }
             }
         }
         private static void AssemblePacket(SocketAsyncEventArgs e)
@@ -78,7 +81,7 @@ namespace Universal.IO.Sockets.Queues
 
         private static void FinishPacket(ClientSocket connection)
         {
-            if (connection.Buffer.MergeBuffer[COMPRESSION_FLAG_OFFSET]==1)
+            if (connection.Buffer.MergeBuffer[COMPRESSION_FLAG_OFFSET] == 1)
                 connection.Buffer.Decompress();
 
             OnPacket?.Invoke(connection, connection.Buffer.MergeBuffer);
