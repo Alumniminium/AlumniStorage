@@ -26,7 +26,7 @@ namespace Universal.IO.Sockets.Client
         internal readonly SocketAsyncEventArgs ReceiveArgs;
         internal readonly SocketAsyncEventArgs SendArgs;
 
-        public ClientSocket(int bufferSize = 2_000_000,object stateObject =null)
+        public ClientSocket(int bufferSize = 2_000_000, object stateObject = null)
         {
             Buffer = new NeutralBuffer(bufferSize);
             StateObject = stateObject;
@@ -103,10 +103,7 @@ namespace Universal.IO.Sockets.Client
                 Disconnect("ClientSocket.Received() Catch: " + ex.Message + " #### " + ex.StackTrace);
             }
         }
-        public void Send(byte[] packet, bool dontCompress = false)
-        {
-            SendQueue.Add(SendArgs, packet, dontCompress);
-        }
+        public void Send(byte[] packet) => SendQueue.Add(SendArgs, packet);
 
         private void Sent(object sender, SocketAsyncEventArgs e)
         {

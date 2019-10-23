@@ -1,18 +1,28 @@
-﻿using Universal.IO.Sockets.Client;
+﻿using System.Buffers;
+using System.Reflection.Emit;
+using Universal.IO.Sockets.Client;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading;
-using System.IO;
-using System.IO.Compression;
 using System;
-using Universal.Extensions;
 
 namespace Universal.IO.Sockets.Queues
 {
+    public class SendQueueItem
+    {
+        public SocketAsyncEventArgs Args;
+        public byte[] Packet;
+        public int Size => BitConverter.ToInt32(Packet, 0);
+        public SendQueueItem(SocketAsyncEventArgs args, byte[] packet)
+        {
+            Args = args;
+            Packet = packet;
+        }
+    }
 
     public static class SendQueue
     {
-        private static readonly BlockingCollection<(SocketAsyncEventArgs, byte[] packet, bool dontCompress)> Queue = new BlockingCollection<(SocketAsyncEventArgs, byte[] packet, bool dontCompress)>();
+        private static readonly BlockingCollection<SendQueueItem> Queue = new BlockingCollection<SendQueueItem>();
         private static Thread _workerThread;
         private static int COMPRESSION_FLAG_OFFSET = 4;
 
@@ -22,25 +32,25 @@ namespace Universal.IO.Sockets.Queues
             _workerThread.Start();
         }
 
-        public static void Add(SocketAsyncEventArgs e, byte[] packet, bool dontCompress) => Queue.Add((e, packet, dontCompress));
+        public static void Add(SocketAsyncEventArgs e, byte[] packet) => Queue.Add(new SendQueueItem(e, packet));
 
         private static void WorkLoop()
         {
-            foreach (var e in Queue.GetConsumingEnumerable())
+            foreach (var item in Queue.GetConsumingEnumerable())
             {
-                var connection = (ClientSocket)e.Item1.UserToken;
-                var packet = e.packet;
-                var size = packet.Length;
+                var connection = (ClientSocket)item.Args.UserToken;
+                var packet = item.Packet;
+                var size = item.Size;
 
                 connection.SendSync.WaitOne();
-                
-                packet.VectorizedCopy(0, connection.Buffer.SendBuffer, 0, size);
-                if (packet[COMPRESSION_FLAG_OFFSET] == 1)
+
+                Buffer.BlockCopy(packet, 0, connection.Buffer.SendBuffer, 0, size);
+                ArrayPool<byte>.Shared.Return(packet);
+                if (connection.Buffer.SendBuffer[COMPRESSION_FLAG_OFFSET] == 1)
                     size = connection.Buffer.Compress(size);
 
-
-                e.Item1.SetBuffer(connection.Buffer.SendBuffer, 0, size);
-                if (!connection.Socket.SendAsync(e.Item1))
+                item.Args.SetBuffer(connection.Buffer.SendBuffer, 0, size);
+                if (!connection.Socket.SendAsync(item.Args))
                     connection.SendSync.Set();
             }
         }

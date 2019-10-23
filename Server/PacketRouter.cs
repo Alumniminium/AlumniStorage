@@ -82,9 +82,9 @@ namespace Server
             using (var filestream = new FileStream(user.CurrentFileName, mode))
             {
                 var chunk = msgFile.GetChunk();
-                filestream.Write(chunk, 0, chunk.Length);
+                filestream.Write(chunk);
 
-                if (filestream.Position == msgFile.Size)
+                if (filestream.Position == msgFile.FileSize)
                 {
                     int count = 0;
                     double size = filestream.Position;

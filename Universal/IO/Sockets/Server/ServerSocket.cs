@@ -27,7 +27,7 @@ namespace Universal.IO.Sockets.Server
 
             AcceptArgs = new SocketAsyncEventArgs();
             AcceptArgs.Completed += Accepted;
-            AcceptArgs.UserToken = new ClientSocket();
+            AcceptArgs.UserToken = new ClientSocket(500_500);
             StartAccepting();
         }
 

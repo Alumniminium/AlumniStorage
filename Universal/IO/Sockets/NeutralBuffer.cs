@@ -9,7 +9,7 @@ namespace Universal.IO.Sockets
     public unsafe class NeutralBuffer
     {
         internal readonly byte[] ReceiveBuffer;
-        internal readonly byte[] SendBuffer;
+        internal byte[] SendBuffer;
         internal readonly byte[] MergeBuffer;
 
         internal int BytesInBuffer { get; set; }
@@ -25,16 +25,16 @@ namespace Universal.IO.Sockets
         {
             var chunk = MergeBuffer.AsSpan().Slice(MsgHeader.SIZE, BytesRequired - MsgHeader.SIZE);
             var decompressed = QuickLZ.decompress(chunk);
-            Array.Copy(chunk.Slice(0, 4).ToArray(), 0, MergeBuffer, 0, 4);
-            Array.Copy(decompressed, 0, MergeBuffer, MsgHeader.SIZE, decompressed.Length);
+            Buffer.BlockCopy(chunk.Slice(0, 4).ToArray(), 0, MergeBuffer, 0, 4);
+            Buffer.BlockCopy(decompressed, 0, MergeBuffer, MsgHeader.SIZE, decompressed.Length);
         }
 
         internal int Compress(int size)
         {
             var compressedChunk = QuickLZ.compress(SendBuffer.AsSpan(MsgHeader.SIZE, size - MsgHeader.SIZE).ToArray(), size - MsgHeader.SIZE, 3);
             var sizeBytes = BitConverter.GetBytes(compressedChunk.Length + MsgHeader.SIZE);
-            Array.Copy(sizeBytes, 0, SendBuffer, 0, sizeBytes.Length);
-            Array.Copy(compressedChunk, 0, SendBuffer, MsgHeader.SIZE, compressedChunk.Length);
+            Buffer.BlockCopy(sizeBytes, 0, SendBuffer, 0, sizeBytes.Length);
+            Buffer.BlockCopy(compressedChunk, 0, SendBuffer, MsgHeader.SIZE, compressedChunk.Length);
             return compressedChunk.Length + MsgHeader.SIZE;
         }
     }

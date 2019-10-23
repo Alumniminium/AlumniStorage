@@ -16,7 +16,7 @@ namespace Client
     {
         public static string ServerHostname = "localhost";
         public static ushort ServerPort = 65533;
-        public static ClientSocket Client = new ClientSocket();
+        public static ClientSocket Client = new ClientSocket(500_500);
 
         public static void Main()
         {
@@ -48,12 +48,12 @@ namespace Client
                     case null:
                         break;
                     case "send":
-                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
-                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
-                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
-                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
-                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
-                        Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
                         //PacketRouter.SendFile(Client, "/home/alumni/Downloads/ct.exe");
                         PacketRouter.SendFile(Client, @"/home/alumni/transcoder");
                         break;

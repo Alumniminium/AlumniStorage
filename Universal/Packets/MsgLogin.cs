@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Runtime.InteropServices;
 using Universal.Extensions;
 using Universal.Packets.Enums;
@@ -10,7 +11,6 @@ namespace Universal.Packets
     {
         public const int MAX_USERNAME_LENGTH = 32;
         public const int MAX_PASSWORD_LENGTH = 32;
-        public const int MAX_EMAIL_LENGTH = 32;
 
         public MsgHeader Header { get; set; }
         public int UniqueId { get; set; }
@@ -18,7 +18,6 @@ namespace Universal.Packets
 
         public fixed char Username[MAX_USERNAME_LENGTH];
         public fixed char Password[MAX_PASSWORD_LENGTH];
-        public fixed char Email[MAX_EMAIL_LENGTH];
 
         public string GetUsername()
         {
@@ -28,11 +27,6 @@ namespace Universal.Packets
         public string GetPassword()
         {
             fixed (char* p = Password)
-                return new string(p);
-        }
-        public string GetEmail()
-        {
-            fixed (char* p = Email)
                 return new string(p);
         }
 
@@ -48,14 +42,7 @@ namespace Universal.Packets
             for (var i = 0; i < password.Length; i++)
                 Password[i] = password[i];
         }
-        public void SetEmail(string email)
-        {
-            email = email.ToLength(MAX_EMAIL_LENGTH);
-            for (var i = 0; i < email.Length; i++)
-                Email[i] = email[i];
-        }
-
-        public static MsgLogin Create(string user, string pass, string email, bool compression, MsgLoginType type)
+        public static MsgLogin Create(string user, string pass, bool compression, MsgLoginType type)
         {
             Span<MsgLogin> span = stackalloc MsgLogin[1];
             ref var ptr = ref MemoryMarshal.GetReference(span);
@@ -68,15 +55,14 @@ namespace Universal.Packets
             ptr.Type = type;
             ptr.SetUsername(user);
             ptr.SetPassword(pass);
-            ptr.SetEmail(email);
             return ptr;
         }
         public static implicit operator byte[](MsgLogin msg)
         {
-            Span<byte> buffer = stackalloc byte[sizeof(MsgLogin)];
+            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length);
             fixed (byte* p = buffer)
                 *(MsgLogin*)p = *&msg;
-            return buffer.ToArray();
+            return buffer;
         }
         public static implicit operator MsgLogin(byte[] msg)
         {
