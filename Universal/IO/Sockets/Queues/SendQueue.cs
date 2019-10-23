@@ -33,7 +33,7 @@ namespace Universal.IO.Sockets.Queues
                 var size = packet.Length;
 
                 connection.SendSync.WaitOne();
-
+                
                 packet.VectorizedCopy(0, connection.Buffer.SendBuffer, 0, size);
                 if (packet[COMPRESSION_FLAG_OFFSET] == 1)
                     size = connection.Buffer.Compress(size);

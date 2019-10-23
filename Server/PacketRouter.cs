@@ -21,8 +21,6 @@ namespace Server
                     ProcessLogin(clientSocket, packet);
                     break;
                 case 2:
-                    break;
-                case 3:
                     ReceiveFile(user, packet);
                     break;
                 default:
@@ -55,62 +53,41 @@ namespace Server
 
         private static void ReceiveFile(User user, byte[] packet)
         {
-            using (var reader = new BinaryReader(new MemoryStream(packet)))
+            var msgFile = (MsgFile)packet;
+            user.CurrentFileName = "/tmp/" + msgFile.GetFileName();
+
+            var mode = FileMode.Create;
+            if (File.Exists(user.CurrentFileName))
+                mode = FileMode.Append;
+            if (msgFile.CreateFile)
+                mode = FileMode.Truncate;
+
+            using (var filestream = new FileStream(user.CurrentFileName, mode))
             {
-                var packetSize = reader.ReadInt32();
-                var compressed = reader.ReadBoolean();
-                var packetId = reader.ReadByte();
-                var fileName = reader.ReadString();
-                user.CurrentFileName = fileName.Trim();
-                var createNew = reader.ReadBoolean();
-                var fileSize = reader.ReadInt64();
-                var fileChunkSize = reader.ReadInt32();
+                var chunk = msgFile.GetChunk();
+                filestream.Write(chunk, 0, chunk.Length);
 
-                var chunk = new byte[fileChunkSize];
-                reader.Read(chunk, 0, fileChunkSize);
-
-                using (var filestream = new FileStream("/tmp/" + fileName, createNew ? FileMode.Create : FileMode.Append))
+                if (filestream.Position == msgFile.Size)
                 {
-                    filestream.Write(chunk, 0, chunk.Length);
-
-                    if (filestream.Position == fileSize)
+                    int count = 0;
+                    double size = filestream.Position;
+                    while(size > 1000)
                     {
-                        //file complete
-                        Console.WriteLine("File received.");
+                        size = size / 1024;
+                        count++;
                     }
+                    size = Math.Round(size,2);
+                    Console.WriteLine($"File {user.CurrentFileName} ({size} {(FormatEnum)count}) received!");
                 }
             }
         }
-        public static void SendFile(User user, string path)
-        {
-            using (var fileStream = File.Open(path, FileMode.Open, FileAccess.Read))
-            {
-                var fileName = Path.GetFileName(path);
-                var fileSize = fileStream.Length;
-                var chunk = new byte[100_000 - 164];
-
-                while (fileStream.Position != fileStream.Length)
-                {
-                    using (var memoryStream = new MemoryStream())
-                    using (var writer = new BinaryWriter(memoryStream))
-                    {
-                        writer.Seek(4, SeekOrigin.Current);
-                        writer.Write((byte)1);
-                        writer.Write((byte)3);
-                        writer.Write(Path.GetFileName(fileName));
-                        writer.Write(fileStream.Position == 0);
-                        var readBytes = fileStream.Read(chunk, 0, chunk.Length);
-                        writer.Write(fileSize);
-                        writer.Write((int)readBytes);
-                        writer.Write(chunk, 0, readBytes);
-                        var pos = writer.BaseStream.Position;
-                        writer.Seek(0, SeekOrigin.Begin);
-                        writer.Write((int)pos);
-                        var buffer = memoryStream.ToArray();
-                        user.Send(buffer);
-                    }
-                }
-            }
-        }
+    }
+    public enum FormatEnum
+    {
+        Bytes =0,
+        Kilobytes =1,
+        Megabytes = 2,
+        Gigabytes = 3,
+        Terabytes = 4,
     }
 }

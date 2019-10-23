@@ -26,7 +26,7 @@ namespace Universal.IO.Sockets.Client
         internal readonly SocketAsyncEventArgs ReceiveArgs;
         internal readonly SocketAsyncEventArgs SendArgs;
 
-        public ClientSocket(int bufferSize = 1_000_000,object stateObject =null)
+        public ClientSocket(int bufferSize = 2_000_000,object stateObject =null)
         {
             Buffer = new NeutralBuffer(bufferSize);
             StateObject = stateObject;
