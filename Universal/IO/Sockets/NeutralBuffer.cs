@@ -1,3 +1,4 @@
+using System.Buffers;
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -25,17 +26,22 @@ namespace Universal.IO.Sockets
         {
             var chunk = MergeBuffer.AsSpan().Slice(MsgHeader.SIZE, BytesRequired - MsgHeader.SIZE);
             var decompressed = QuickLZ.decompress(chunk);
-            Buffer.BlockCopy(chunk.Slice(0, 4).ToArray(), 0, MergeBuffer, 0, 4);
+
+            for (int i = 0; i < 4; i++)
+                MergeBuffer[i] = chunk[i];
+
             Buffer.BlockCopy(decompressed, 0, MergeBuffer, MsgHeader.SIZE, decompressed.Length);
         }
 
         internal int Compress(int size)
         {
-            var compressedChunk = QuickLZ.compress(SendBuffer.AsSpan(MsgHeader.SIZE, size - MsgHeader.SIZE).ToArray(), size - MsgHeader.SIZE, 3);
-            var sizeBytes = BitConverter.GetBytes(compressedChunk.Length + MsgHeader.SIZE);
+            var compressedChunk = QuickLZ.compress(SendBuffer.AsSpan(MsgHeader.SIZE, size - MsgHeader.SIZE).ToArray(), size - MsgHeader.SIZE, 3, ArrayPool<byte>.Shared.Rent(400 + size - MsgHeader.SIZE));
+            var compressedSize = compressedChunk.Length;
+            var sizeBytes = BitConverter.GetBytes(compressedSize + MsgHeader.SIZE);
             Buffer.BlockCopy(sizeBytes, 0, SendBuffer, 0, sizeBytes.Length);
-            Buffer.BlockCopy(compressedChunk, 0, SendBuffer, MsgHeader.SIZE, compressedChunk.Length);
-            return compressedChunk.Length + MsgHeader.SIZE;
+            Buffer.BlockCopy(compressedChunk, 0, SendBuffer, MsgHeader.SIZE, compressedSize);
+            ArrayPool<byte>.Shared.Return(compressedChunk);
+            return compressedSize + MsgHeader.SIZE;
         }
     }
 }

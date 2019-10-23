@@ -1,20 +1,10 @@
 using System;
+using System.Buffers;
 
 namespace Universal.IO
 {
     public static class QuickLZ
     {
-        public const int QLZ_VERSION_MAJOR = 1;
-        public const int QLZ_VERSION_MINOR = 5;
-        public const int QLZ_VERSION_REVISION = 0;
-
-        // Streaming mode not supported
-        public const int QLZ_STREAMING_BUFFER = 0;
-
-        // Bounds checking not supported  Use try...catch instead
-        public const int QLZ_MEMORY_SAFE = 0;
-
-        // Decrease QLZ_POINTERS_3 to increase level 3 compression speed. Do not edit any other values!
         private const int HASH_VALUES = 4096;
         private const int MINOFFSET = 2;
         private const int UNCONDITIONAL_MATCHLEN = 6;
@@ -37,7 +27,7 @@ namespace Universal.IO
                 return source[2];
         }
 
-        public static int sizeCompressed(byte[] source)
+        public static int sizeCompressed(Span<byte> source)
         {
             if (headerLen(source) == 9)
                 return source[1] | (source[2] << 8) | (source[3] << 16) | (source[4] << 24);
@@ -55,13 +45,12 @@ namespace Universal.IO
             fast_write(dst, 5, size_compressed, 4);
         }
 
-        public static byte[] compress(byte[] source,int size, int level)
+        public static byte[] compress(byte[] source, int size, int level, byte[] destination)
         {
             int src = 0;
             int dst = DEFAULT_HEADERLEN + CWORD_LEN;
             uint cword_val = 0x80000000;
             int cword_ptr = DEFAULT_HEADERLEN;
-            byte[] destination = new byte[size + 400];
             int[,] hashtable;
             int[] cachetable = new int[HASH_VALUES];
             byte[] hash_counter = new byte[HASH_VALUES];
@@ -89,7 +78,7 @@ namespace Universal.IO
                     {
                         d2 = new byte[size + DEFAULT_HEADERLEN];
                         write_header(d2, level, false, size, size + DEFAULT_HEADERLEN);
-                        System.Array.Copy(source, 0, d2, DEFAULT_HEADERLEN, size);
+                        Buffer.BlockCopy(source, 0, d2, DEFAULT_HEADERLEN, size);
                         return d2;
                     }
 
@@ -272,8 +261,9 @@ namespace Universal.IO
             }
             fast_write(destination, cword_ptr, (int)((cword_val >> 1) | 0x80000000), CWORD_LEN);
             write_header(destination, level, true, size, dst);
-            d2 = new byte[dst];
-            System.Array.Copy(destination, d2, dst);
+            d2 = ArrayPool<byte>.Shared.Rent(dst);
+            Buffer.BlockCopy(destination, 0, d2, 0, dst);
+            ArrayPool<byte>.Shared.Return(destination);
             return d2;
         }
 
@@ -303,9 +293,10 @@ namespace Universal.IO
 
             if ((source[0] & 1) != 1)
             {
+                var hl = headerLen(source);
                 byte[] d2 = new byte[size];
-                System.Array.Copy(source.ToArray(), headerLen(source), d2, 0, size);
-                #warning fix source.ToArray()
+                for (int i = 0; i < size; i++)
+                    d2[i] = source[hl + i];
                 return d2;
             }
 

@@ -54,6 +54,7 @@ namespace Universal.IO.Sockets.Queues
 
                     Buffer.BlockCopy(packet, 0, connection.Buffer.SendBuffer, 0, size);
                     ArrayPool<byte>.Shared.Return(packet);
+
                     if (connection.Buffer.SendBuffer[COMPRESSION_FLAG_OFFSET] == 1)
                         size = connection.Buffer.Compress(size);
 
