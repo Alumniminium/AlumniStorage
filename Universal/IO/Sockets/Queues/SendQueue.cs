@@ -43,7 +43,6 @@ namespace Universal.IO.Sockets.Queues
         {
             while (await _reader.WaitToReadAsync())
             {
-                // Fast loop around available jobs
                 while (_reader.TryRead(out var item))
                 {
                     var connection = (ClientSocket)item.Args.UserToken;
