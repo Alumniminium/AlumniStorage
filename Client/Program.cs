@@ -55,7 +55,7 @@ namespace Client
                         Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
                         Client.Send(MsgLogin.Create("asd", "asdasd", "asd@a.sd", true, MsgLoginType.Login));
                         //PacketRouter.SendFile(Client, "/home/alumni/Downloads/ct.exe");
-                        PacketRouter.SendFile(Client, @"C:\Users\domi\Desktop\1509829515646.png");
+                        PacketRouter.SendFile(Client, @"/home/alumni/transcoder");
                         break;
                     default:
                         var buffer = Encoding.UTF8.GetBytes(msg);
