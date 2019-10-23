@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Client.Entities;
+using Universal.IO;
 using Universal.IO.Sockets.Client;
 using Universal.Packets;
 
@@ -27,25 +28,33 @@ public static class PacketRouter
 
     private static void ReceiveFile(User user, byte[] packet)
     {
-        using (var reader = new BinaryReader(new MemoryStream(packet)))
+        var msgFile = (MsgFile)packet;
+        user.CurrentFileName = "/tmp/" + msgFile.GetFileName();
+
+        var mode = FileMode.Create;
+        if (File.Exists(user.CurrentFileName))
+            mode = FileMode.Append;
+        if (msgFile.CreateFile)
+            mode = FileMode.Truncate;
+
+        using (var filestream = new FileStream(user.CurrentFileName, mode))
         {
-            var packetSize = reader.ReadInt32();
-            var compressed = reader.ReadBoolean();
-            var packetId = reader.ReadByte();
-            var fileName = reader.ReadString();
-            user.CurrentFileName = fileName.Trim();
-            var createNew = reader.ReadBoolean();
-            var fileSize = reader.ReadInt64();
-            var fileChunkSize = reader.ReadInt32();
+            var chunk = msgFile.GetChunk();
+            filestream.Write(chunk, 0, chunk.Length);
 
-            var chunk = new byte[fileChunkSize];
-            reader.Read(chunk, 0, fileChunkSize);
-
-            using (var filestream = new FileStream("/tmp/" + fileName, createNew ? FileMode.Create : FileMode.Append))
+            if (filestream.Position == msgFile.Size)
             {
-                filestream.Write(chunk, 0, chunk.Length);
+                int count = 0;
+                double size = filestream.Position;
+                while (size > 1000)
+                {
+                    size = size / 1024;
+                    count++;
+                }
+                Console.WriteLine($"File {user.CurrentFileName} ({size.ToString("###.##")} {(FormatEnum)count}) received!");
             }
         }
+
     }
     public static void SendFile(ClientSocket user, string path)
     {
@@ -57,7 +66,7 @@ public static class PacketRouter
 
             while (fileStream.Position != fileStream.Length)
             {
-                bool firstRead = fileStream.Position==0;
+                bool firstRead = fileStream.Position == 0;
                 var readBytes = fileStream.Read(chunk, 0, chunk.Length);
                 var msgFile = MsgFile.Create(fileName, fileSize, readBytes, chunk, firstRead);
                 user.Send(msgFile);
