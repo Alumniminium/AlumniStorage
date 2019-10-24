@@ -24,12 +24,23 @@ namespace Server
                 case 2:
                     ReceiveFile(user, packet);
                     break;
+                case 10:
+                    Pong(user, packet);
+                    break;
                 default:
                     Console.WriteLine("Unknown Packet Id " + packetId);
                     break;
             }
         }
+        private static void Pong(User user, byte[] packet)
+        {
+            var msgBench = (MsgBench)packet;
+            var array = msgBench.GetArray();
+            //array = array.Reverse().ToArray();
 
+            msgBench = MsgBench.Create(array, false);
+            user.Send(msgBench);
+        }
         private static void ProcessLogin(ClientSocket userSocket, byte[] packet)
         {
             var msgLogin = (MsgLogin)packet;

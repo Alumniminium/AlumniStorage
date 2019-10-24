@@ -1,4 +1,5 @@
-﻿using System;
+﻿using System.Diagnostics;
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -17,7 +18,7 @@ namespace Client
         public static string ServerHostname = "localhost";
         public static ushort ServerPort = 65533;
         public static ClientSocket Client = new ClientSocket(500_500);
-
+        public static Stopwatch Stopwatch = new Stopwatch();
         public static void Main()
         {
             ServerHostname = "localhost";
@@ -46,6 +47,20 @@ namespace Client
                 switch (msg)
                 {
                     case null:
+                        break;
+                    case "login":
+                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
+                        break;
+                    case "ping":
+                        byte[] array = new byte[100_000];
+                        var random = new Random();
+                        for (int i = 0; i < array.Length; i++)
+                        {
+                            array[i] = (byte)random.Next(0, 255);
+                        }
+                        Stopwatch.Restart();
+                        var msgBench = MsgBench.Create(array, false);
+                        Client.Send(msgBench);
                         break;
                     case "send":
                         Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));

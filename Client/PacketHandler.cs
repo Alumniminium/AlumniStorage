@@ -1,9 +1,11 @@
+using System.Linq;
 using System;
 using System.IO;
 using Client.Entities;
 using Universal.IO;
 using Universal.IO.Sockets.Client;
 using Universal.Packets;
+using Client;
 
 public static class PacketRouter
 {
@@ -16,14 +18,36 @@ public static class PacketRouter
             case 1:
                 break;
             case 2:
+                ReceiveFile(user, packet);
                 break;
             case 3:
-                ReceiveFile(user, packet);
+                MsgTokenHandler(user, packet);
+                break;
+            case 10:
+                Pong(user, packet);
                 break;
             default:
                 Console.WriteLine("Unknown Packet Id " + packetId);
                 break;
         }
+    }
+
+    private static void Pong(User user, byte[] packet)
+    {
+        Program.Stopwatch.Stop();
+        Console.WriteLine("Took: "+Program.Stopwatch.Elapsed.TotalMilliseconds);
+    }
+
+    private static void MsgTokenHandler(User user, byte[] packet)
+    {
+        var msgToken = (MsgToken)packet;
+        var token = msgToken.GetToken();
+        var path = msgToken.GetPath();
+
+        if (user.Tokens.ContainsKey(path))
+            user.Tokens[path] = token;
+        else
+            user.Tokens.Add(path, token);
     }
 
     private static void ReceiveFile(User user, byte[] packet)
@@ -58,6 +82,8 @@ public static class PacketRouter
     }
     public static void SendFile(ClientSocket user, string path)
     {
+
+
         using (var fileStream = File.Open(path, FileMode.Open, FileAccess.Read))
         {
             var fileName = Path.GetFileName(path);

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Net;
 using Universal.IO.Sockets.Client;
 
@@ -11,14 +12,16 @@ namespace Client.Entities
         public string Email { get; set; }
         public ClientSocket Socket { get; set; }
         public string CurrentFileName { get; set; }
+        public Dictionary<string,string> Tokens;
 
         public User()
         {
+            Tokens = new Dictionary<string, string>();
         }
 
         public void OnDisconnect()
         {
-
+            
         }
 
         public void Send(byte[] packet) => Socket?.Send(packet);

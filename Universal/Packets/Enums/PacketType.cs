@@ -4,5 +4,7 @@ namespace Universal.Packets.Enums
     {
         MsgLogin = 1,
         MsgFile = 2,
+        MsgToken = 3,
+        MsgBench = 10,
     }
 }
