@@ -36,9 +36,9 @@ namespace Server
         {
             var msgBench = (MsgBench)packet;
             var array = msgBench.GetArray();
-            //array = array.Reverse().ToArray();
+            array = array.Reverse().ToArray();
 
-            msgBench = MsgBench.Create(array, false);
+            msgBench = MsgBench.Create(array, true);
             user.Send(msgBench);
         }
         private static void ProcessLogin(ClientSocket userSocket, byte[] packet)

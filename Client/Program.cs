@@ -59,7 +59,7 @@ namespace Client
                             array[i] = (byte)random.Next(0, 255);
                         }
                         Stopwatch.Restart();
-                        var msgBench = MsgBench.Create(array, false);
+                        var msgBench = MsgBench.Create(array, true);
                         Client.Send(msgBench);
                         break;
                     case "send":
