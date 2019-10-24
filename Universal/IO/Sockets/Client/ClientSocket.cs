@@ -49,6 +49,7 @@ namespace Universal.IO.Sockets.Client
                     Disconnect("ConnectAsync() IsConnected == true");
 
                 Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                Socket.NoDelay=true;
                 var connectArgs = new SocketAsyncEventArgs
                 {
                     RemoteEndPoint = new IPEndPoint(IPAddress.Parse(host), port)
