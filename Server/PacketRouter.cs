@@ -12,6 +12,7 @@ namespace Server
 {
     public static class PacketRouter
     {
+        public static Dictionary<string, string> Tokens = new Dictionary<string, string>();
         public static void Handle(ClientSocket clientSocket, byte[] packet)
         {
             var packetId = packet[5];
@@ -24,6 +25,9 @@ namespace Server
                 case 2:
                     ReceiveFile(user, packet);
                     break;
+                case 3:
+                    MsgTokenHandler(user, packet);
+                    break;
                 case 10:
                     Pong(user, packet);
                     break;
@@ -31,6 +35,27 @@ namespace Server
                     Console.WriteLine("Unknown Packet Id " + packetId);
                     break;
             }
+        }
+        private static void MsgTokenHandler(User user, byte[] packet)
+        {
+            var msgToken = (MsgToken)packet;
+            var path = msgToken.GetPath();
+
+            var token = "";
+            if (!user.Tokens.ContainsKey(path))
+            {
+                if(!Tokens.ContainsKey(path))
+                {
+                    token = Guid.NewGuid().ToString().Replace("-","");
+                    Tokens.Add(path,token);
+                    user.Tokens.Add(path,token);
+                }
+            }
+            else
+                token = user.Tokens[path];
+            Console.WriteLine("Token Created: "+token+" for: "+path);
+            msgToken = MsgToken.Create(token,path,true,0);
+            user.Send(msgToken);
         }
         private static void Pong(User user, byte[] packet)
         {
@@ -82,7 +107,13 @@ namespace Server
         private static void ReceiveFile(User user, byte[] packet)
         {
             var msgFile = (MsgFile)packet;
-            user.CurrentFileName = "/tmp/" + msgFile.GetFileName();
+            var token = msgFile.GetToken();
+            Console.WriteLine("Token: "+token);
+            var kvp = user.Tokens.FirstOrDefault(n=> n.Value == token);
+            var path = "/tmp/"+kvp.Key;
+            Console.WriteLine("Path: "+path);
+            if(string.IsNullOrEmpty(kvp.Key))
+                user.Disconnect("No token");
 
             var mode = FileMode.Create;
             if (File.Exists(user.CurrentFileName))

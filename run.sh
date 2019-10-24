@@ -11,4 +11,4 @@ tmux new-session \; \
   send-keys '#Split = control+b %' C-m \; \
   send-keys '#Kill = control+b x' C-m \; \
   send-keys 'cd Server && dotnet run' C-m \; \
-  select-pane -t0 \;
+  select-pane -t0 \;  

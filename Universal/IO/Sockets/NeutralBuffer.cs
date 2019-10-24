@@ -35,7 +35,7 @@ namespace Universal.IO.Sockets
 
         internal int Compress(int size)
         {
-            var compressedChunk = QuickLZ.compress(SendBuffer.AsSpan(MsgHeader.SIZE, size - MsgHeader.SIZE).ToArray(), size - MsgHeader.SIZE, 3, ArrayPool<byte>.Shared.Rent(400 + size - MsgHeader.SIZE));
+            var compressedChunk = QuickLZ.compress(SendBuffer.AsSpan(MsgHeader.SIZE, size - MsgHeader.SIZE).ToArray(), size - MsgHeader.SIZE, 3, ArrayPool<byte>.Shared.Rent(400 + size - MsgHeader.SIZE).SelfSetToDefaults());
             var compressedSize = compressedChunk.Length;
             var sizeBytes = BitConverter.GetBytes(compressedSize + MsgHeader.SIZE);
             Buffer.BlockCopy(sizeBytes, 0, SendBuffer, 0, sizeBytes.Length);

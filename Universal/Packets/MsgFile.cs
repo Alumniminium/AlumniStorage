@@ -10,25 +10,25 @@ namespace Universal.Packets
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct MsgFile
     {
-        public const int MAX_NAME_LENGTH = 128;
+        public const int TOKEN_LENGTH = 32;
         public const int MAX_CHUNK_SIZE = 500_000;
         public MsgHeader Header;
         public bool CreateFile;
         public long FileSize;
         public int ChunkSize;
-        public fixed char FileName[MAX_NAME_LENGTH];
+        public fixed char Token[TOKEN_LENGTH];
         public fixed byte Chunk[MAX_CHUNK_SIZE];
 
-        public string GetFileName()
+        public string GetToken()
         {
-            fixed (char* p = FileName)
+            fixed (char* p = Token)
                 return new string(p);
         }
-        public void SetFileName(string fileName)
+        public void SetToken(string token)
         {
-            fileName = fileName.ToLength(MAX_NAME_LENGTH);
-            for (var i = 0; i < fileName.Length; i++)
-                FileName[i] = fileName[i];
+            token = token.ToLength(TOKEN_LENGTH);
+            for (var i = 0; i < token.Length; i++)
+                Token[i] = token[i];
         }
         public Span<byte> GetChunk()
         {
@@ -41,26 +41,30 @@ namespace Universal.Packets
                 Unsafe.Copy(b, ref chunk);
         }
 
-        public static MsgFile Create(string fileName, long size, int chunkSize, byte[] chunk, bool create)
+        public static MsgFile Create(string token, long size, int chunkSize, byte[] chunk, bool create)
         {
             Span<MsgFile> span = stackalloc MsgFile[1];
             ref var ptr = ref MemoryMarshal.GetReference(span);
+            
             ptr.Header = new MsgHeader
             {
                 Length = sizeof(MsgFile),
                 Compressed = true,
                 Id = PacketType.MsgFile,
             };
-            ptr.SetFileName(fileName);
-            ptr.SetChunk(chunk);
+
             ptr.FileSize = size;
             ptr.ChunkSize = chunkSize;
             ptr.CreateFile = create;
+
+            ptr.SetToken(token);
+            ptr.SetChunk(chunk);
+
             return ptr;
         }
         public static implicit operator byte[](MsgFile msg)
         {
-            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length);
+            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length).SelfSetToDefaults();
             fixed (byte* p = buffer)
                 *(MsgFile*)p = *&msg;
             return buffer;

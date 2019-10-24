@@ -10,7 +10,7 @@ namespace Universal.Packets
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct MsgBench
     {
-        public const int MAX_ARRAY_LENGTH = 100_000;
+        public const int MAX_ARRAY_LENGTH = 5;
         public MsgHeader Header { get; set; }
         public fixed byte Array[MAX_ARRAY_LENGTH];
 
@@ -45,7 +45,7 @@ namespace Universal.Packets
         }
         public static implicit operator byte[](MsgBench msg)
         {
-            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length);
+            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length).SelfSetToDefaults();
             fixed (byte* p = buffer)
                 *(MsgBench*)p = *&msg;
             return buffer;

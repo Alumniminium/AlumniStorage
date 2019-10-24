@@ -16,6 +16,7 @@ public static class PacketRouter
         switch (packetId)
         {
             case 1:
+                ProcessLogin(clientSocket,packet);
                 break;
             case 2:
                 ReceiveFile(user, packet);
@@ -32,6 +33,23 @@ public static class PacketRouter
         }
     }
 
+    private static void ProcessLogin(ClientSocket client, byte[] packet)
+    {
+         var msgLogin = (MsgLogin)packet;
+            var username = msgLogin.GetUsername();
+            var password = msgLogin.GetPassword();
+            Console.WriteLine($"MsgLogin: {username} with password {password} (compressed: {msgLogin.Header.Compressed}) requesting login.");
+
+            var user = new User
+            {
+                Socket = client,
+                Username = username,
+                Password = password,
+                Id = msgLogin.UniqueId
+            };
+            user.Socket.OnDisconnect += user.OnDisconnect;
+            user.Socket.StateObject = user;
+    }   
     private static void Pong(User user, byte[] packet)
     {
         Program.Stopwatch.Stop();
@@ -53,7 +71,7 @@ public static class PacketRouter
     private static void ReceiveFile(User user, byte[] packet)
     {
         var msgFile = (MsgFile)packet;
-        user.CurrentFileName = "/tmp/" + msgFile.GetFileName();
+        user.CurrentFileName = "/tmp/" + msgFile.GetToken();
 
         var mode = FileMode.Create;
         if (File.Exists(user.CurrentFileName))
@@ -80,13 +98,10 @@ public static class PacketRouter
         }
 
     }
-    public static void SendFile(ClientSocket user, string path)
+    public static void SendFile(User user, string path, string token)
     {
-
-
         using (var fileStream = File.Open(path, FileMode.Open, FileAccess.Read))
         {
-            var fileName = Path.GetFileName(path);
             var fileSize = fileStream.Length;
             var chunk = new byte[MsgFile.MAX_CHUNK_SIZE];
 
@@ -94,7 +109,7 @@ public static class PacketRouter
             {
                 bool firstRead = fileStream.Position == 0;
                 var readBytes = fileStream.Read(chunk, 0, chunk.Length);
-                var msgFile = MsgFile.Create(fileName, fileSize, readBytes, chunk, firstRead);
+                var msgFile = MsgFile.Create(token, fileSize, readBytes, chunk, firstRead);
                 user.Send(msgFile);
             }
         }

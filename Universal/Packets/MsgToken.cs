@@ -9,7 +9,7 @@ namespace Universal.Packets
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct MsgToken
     {
-        public const int MAX_TOKEN_LENGTH = 64;
+        public const int MAX_TOKEN_LENGTH = 32;
         public const int MAX_PATH_LENGTH = 256;
 
         public MsgHeader Header { get; set; }
@@ -61,7 +61,7 @@ namespace Universal.Packets
         }
         public static implicit operator byte[](MsgToken msg)
         {
-            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length);
+            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length).SelfSetToDefaults();
             fixed (byte* p = buffer)
                 *(MsgToken*)p = *&msg;
             return buffer;

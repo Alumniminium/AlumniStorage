@@ -59,7 +59,7 @@ namespace Universal.Packets
         }
         public static implicit operator byte[](MsgLogin msg)
         {
-            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length);
+            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length).SelfSetToDefaults();
             fixed (byte* p = buffer)
                 *(MsgLogin*)p = *&msg;
             return buffer;

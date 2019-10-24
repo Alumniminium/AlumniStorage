@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using Universal.Extensions;
 
 namespace Universal.IO
 {
@@ -261,7 +262,7 @@ namespace Universal.IO
             }
             fast_write(destination, cword_ptr, (int)((cword_val >> 1) | 0x80000000), CWORD_LEN);
             write_header(destination, level, true, size, dst);
-            d2 = ArrayPool<byte>.Shared.Rent(dst);
+            d2 = ArrayPool<byte>.Shared.Rent(dst).SelfSetToDefaults();
             Buffer.BlockCopy(destination, 0, d2, 0, dst);
             ArrayPool<byte>.Shared.Return(destination);
             return d2;

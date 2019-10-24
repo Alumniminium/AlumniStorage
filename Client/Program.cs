@@ -10,6 +10,7 @@ using Universal.IO.Sockets.Client;
 using Universal.IO.Sockets.Queues;
 using Universal.Packets;
 using Universal.Packets.Enums;
+using Client.Entities;
 
 namespace Client
 {
@@ -52,7 +53,7 @@ namespace Client
                         Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
                         break;
                     case "ping":
-                        byte[] array = new byte[100_000];
+                        byte[] array = new byte[5];
                         var random = new Random();
                         for (int i = 0; i < array.Length; i++)
                         {
@@ -63,14 +64,18 @@ namespace Client
                         Client.Send(msgBench);
                         break;
                     case "send":
+                    Console.WriteLine("Logging in...");
                         Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
-                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
-                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
-                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
-                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
-                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
-                        //PacketRouter.SendFile(Client, "/home/alumni/Downloads/ct.exe");
-                        PacketRouter.SendFile(Client, @"/home/alumni/transcoder");
+                        while (Client.StateObject == null)
+                            Thread.Sleep(1);
+                        var user = (User)Client.StateObject;
+                        Console.WriteLine("Requesting Token...");
+                        user.Send(MsgToken.Create("", @"transcoder", true, 0));
+                        while (!user.Tokens.ContainsKey("transcoder"))
+                            Thread.Sleep(1);
+                        Console.WriteLine("Uploading... using "+user.Tokens["transcoder"]);
+                        PacketRouter.SendFile(user, @"/home/alumni/transcoder", user.Tokens["transcoder"]);
+                        Console.WriteLine("Done.");
                         break;
                     default:
                         var buffer = Encoding.UTF8.GetBytes(msg);
