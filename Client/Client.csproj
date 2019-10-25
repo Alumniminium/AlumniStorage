@@ -1,12 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+<<<<<<< HEAD
     <TargetFramework>netcoreapp3</TargetFramework>
      <PublishTrimmed>true</PublishTrimmed>
     <PublishSingleFile>true</PublishSingleFile>
     <PublishReadyToRun>false</PublishReadyToRun>
     <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+=======
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
+>>>>>>> 338e3150957e6623a95f6e51dcf18c9dee31cbe3
   </PropertyGroup>
 
 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
