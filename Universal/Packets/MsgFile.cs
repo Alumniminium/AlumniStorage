@@ -12,7 +12,9 @@ namespace Universal.Packets
     {
         public const int TOKEN_LENGTH = 32;
         public const int MAX_CHUNK_SIZE = 500_000;
-        public MsgHeader Header;
+        public int Length{get;set;}
+        public PacketType Id{get;set;}
+        public bool Compressed{get;set;}
         public bool CreateFile;
         public long FileSize;
         public int ChunkSize;
@@ -43,30 +45,25 @@ namespace Universal.Packets
 
         public static MsgFile Create(string token, long size, int chunkSize, byte[] chunk, bool create)
         {
-            Span<MsgFile> span = stackalloc MsgFile[1];
-            ref var ptr = ref MemoryMarshal.GetReference(span);
+            MsgFile* ptr = stackalloc MsgFile[1];
             
-            ptr.Header = new MsgHeader
-            {
-                Length = sizeof(MsgFile),
-                Compressed = true,
-                Id = PacketType.MsgFile,
-            };
+            ptr->Length = sizeof(MsgFile);
+            ptr->Compressed = true;
+            ptr->Id = PacketType.MsgFile;
 
-            ptr.FileSize = size;
-            ptr.ChunkSize = chunkSize;
-            ptr.CreateFile = create;
+            ptr->FileSize = size;
+            ptr->ChunkSize = chunkSize;
+            ptr->CreateFile = create;
 
-            ptr.SetToken(token);
-            ptr.SetChunk(chunk);
+            ptr->SetToken(token);
+            ptr->SetChunk(chunk);
 
-            return ptr;
+            return *ptr;
         }
         public static implicit operator byte[](MsgFile msg)
         {
-            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length).SelfSetToDefaults();
-            fixed (byte* p = buffer)
-                *(MsgFile*)p = *&msg;
+            var buffer = ArrayPool<byte>.Shared.Rent(sizeof(MsgFile));
+            MemoryMarshal.Write<MsgFile>(buffer,ref msg);
             return buffer;
         }
         public static implicit operator MsgFile(byte[] msg)

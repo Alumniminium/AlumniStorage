@@ -11,12 +11,14 @@ namespace Universal.Packets
     {
         public const int MAX_TOKEN_LENGTH = 32;
         public const int MAX_PATH_LENGTH = 256;
-
-        public MsgHeader Header { get; set; }
+        
+        public int Length{get;set;}
+        public PacketType Id{get;set;}
+        public bool Compressed{get;set;}
         public MsgTokenType Type { get; set; }
         public fixed char Token[MAX_TOKEN_LENGTH];
         public fixed char Path[MAX_PATH_LENGTH];
-        
+
         public string GetToken()
         {
             fixed (char* p = Token)
@@ -28,7 +30,7 @@ namespace Universal.Packets
             token = token.ToLength(MAX_TOKEN_LENGTH);
             for (var i = 0; i < token.Length; i++)
                 Token[i] = token[i];
-        }        
+        }
         public string GetPath()
         {
             fixed (char* p = Path)
@@ -41,29 +43,22 @@ namespace Universal.Packets
             for (var i = 0; i < path.Length; i++)
                 Path[i] = path[i];
         }
-        public static MsgToken Create(string token,string path, bool compression, MsgTokenType type)
+        public static MsgToken Create(string token, string path, bool compression, MsgTokenType type)
         {
-            Span<MsgToken> span = stackalloc MsgToken[1];
-            ref var ptr = ref MemoryMarshal.GetReference(span);
+            MsgToken* ptr = stackalloc MsgToken[1];
+            ptr->Length = sizeof(MsgToken);
+            ptr->Compressed = compression;
+            ptr->Id = PacketType.MsgToken;
+            ptr->Type = type;
+            ptr->SetToken(token);
+            ptr->SetPath(path);
 
-            ptr.Header = new MsgHeader
-            {
-                Length = sizeof(MsgToken),
-                Compressed = compression,
-                Id = PacketType.MsgToken,
-            };
-
-            ptr.Type = type;
-            ptr.SetToken(token);
-            ptr.SetPath(path);
-
-            return ptr;
+            return *ptr;
         }
         public static implicit operator byte[](MsgToken msg)
         {
-            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length).SelfSetToDefaults();
-            fixed (byte* p = buffer)
-                *(MsgToken*)p = *&msg;
+            var buffer = ArrayPool<byte>.Shared.Rent(sizeof(MsgToken));
+            MemoryMarshal.Write<MsgToken>(buffer, ref msg);
             return buffer;
         }
         public static implicit operator MsgToken(byte[] msg)

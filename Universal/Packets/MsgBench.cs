@@ -11,7 +11,9 @@ namespace Universal.Packets
     public unsafe struct MsgBench
     {
         public const int MAX_ARRAY_LENGTH = 5;
-        public MsgHeader Header { get; set; }
+        public int Length{get;set;}
+        public PacketType Id{get;set;}
+        public bool Compressed{get;set;}
         public fixed byte Array[MAX_ARRAY_LENGTH];
 
         public byte[] GetArray()
@@ -30,24 +32,19 @@ namespace Universal.Packets
 
         public static MsgBench Create(byte[] array, bool compression)
         {
-            Span<MsgBench> span = stackalloc MsgBench[1];
-            ref var ptr = ref MemoryMarshal.GetReference(span);
+            MsgBench* ptr = stackalloc MsgBench[1];
 
-            ptr.Header = new MsgHeader
-            {
-                Length = sizeof(MsgBench),
-                Compressed = compression,
-                Id = PacketType.MsgBench,
-            };
+            ptr->Length = sizeof(MsgBench);
+            ptr->Compressed = true;
+            ptr->Id = PacketType.MsgBench;
 
-            ptr.SetToken(array);
-            return ptr;
+            ptr->SetToken(array);
+            return *ptr;
         }
         public static implicit operator byte[](MsgBench msg)
         {
-            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length).SelfSetToDefaults();
-            fixed (byte* p = buffer)
-                *(MsgBench*)p = *&msg;
+            var buffer = ArrayPool<byte>.Shared.Rent(sizeof(MsgBench));
+            MemoryMarshal.Write<MsgBench>(buffer,ref msg);
             return buffer;
         }
         public static implicit operator MsgBench(byte[] msg)
