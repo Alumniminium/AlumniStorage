@@ -27,8 +27,8 @@ namespace Universal.IO.Sockets
             using (var ms = new MemoryStream(MergeBuffer))
             using (var bs = new BrotliStream(ms, CompressionMode.Decompress))
             {
-                ms.Seek(sizeof(MsgHeader),SeekOrigin.Begin);
-                bs.Read(MergeBuffer,sizeof(MsgHeader),BytesRequired-sizeof(MsgHeader));
+                ms.Seek(6,SeekOrigin.Begin);
+                bs.Read(MergeBuffer,6,BytesRequired-6);
             }
         }
         internal int Compress(int size)
@@ -36,8 +36,8 @@ namespace Universal.IO.Sockets
             using (var ms = new MemoryStream(SendBuffer))
             using (var bs = new BrotliStream(ms, CompressionMode.Compress))
             {
-                ms.Seek(sizeof(MsgHeader),SeekOrigin.Begin);
-                bs.Write(SendBuffer,sizeof(MsgHeader),size-sizeof(MsgHeader));
+                ms.Seek(6,SeekOrigin.Begin);
+                bs.Write(SendBuffer,6,size-6);
                 bs.Flush();                
                 size=(int)ms.Position+1;
             }
