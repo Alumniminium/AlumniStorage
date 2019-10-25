@@ -9,7 +9,7 @@ namespace Benchmarks
     {
         public static void Main(string[] args)
         {
-            var summary = BenchmarkRunner.Run<AllocTests>();
+            var summary = BenchmarkRunner.Run<CompressionTests>();
             Console.WriteLine(summary);
         }
     }

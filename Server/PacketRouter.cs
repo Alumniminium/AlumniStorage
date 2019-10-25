@@ -61,9 +61,9 @@ namespace Server
         {
             var msgBench = (MsgBench)packet;
             var array = msgBench.GetArray();
-            array = array.Reverse().ToArray();
+            //array = array.Reverse().ToArray();
 
-            msgBench = MsgBench.Create(array, true);
+            msgBench = MsgBench.Create(array, false);
             user.Send(msgBench);
         }
         private static void ProcessLogin(ClientSocket userSocket, byte[] packet)
@@ -71,7 +71,7 @@ namespace Server
             var msgLogin = (MsgLogin)packet;
             var username = msgLogin.GetUsername();
             var password = msgLogin.GetPassword();
-            FConsole.WriteLine($"MsgLogin: {username} with password {password} (compressed: {msgLogin.Header.Compressed}) requesting login.");
+            FConsole.WriteLine($"MsgLogin: {username} with password {password} (compressed: {msgLogin.Compressed}) requesting login.");
 
             var user = new User
             {

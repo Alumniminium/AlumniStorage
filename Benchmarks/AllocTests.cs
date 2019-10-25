@@ -1,4 +1,3 @@
-using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
 using BenchmarkDotNet.Attributes;
@@ -7,43 +6,34 @@ using Universal.Packets;
 namespace Benchmarks
 {
     [MemoryDiagnoser]
-    public class AllocTests
+    public unsafe class AllocTests
     {
         public MsgLogin CachedMsg;
         public byte[] CachedArray;
+
         [GlobalSetup]
         public void Setup()
         {
             CachedMsg = MsgLogin.Create("user", "pass", true, Universal.Packets.Enums.MsgLoginType.Login);
             CachedArray = CachedMsg;
-        }
-
-        public void Stackalloc()
+        }        
+        public byte[] Cast_Safe_TryWrite()
         {
-            MsgLogin msg = MsgLogin.Create("user", "pass", true, Universal.Packets.Enums.MsgLoginType.Login);
-        }
-
-        public void Span()
+            MemoryMarshal.TryWrite(CachedArray, ref CachedMsg);
+            return CachedArray;
+        }        
+        public byte[] Cast_Safe_Write()
         {
-            MsgLogin msg = MsgLogin.CreateSpan("user", "pass", true, Universal.Packets.Enums.MsgLoginType.Login);
+            MemoryMarshal.Write(CachedArray, ref CachedMsg);
+            return CachedArray;
         }
-
-        [Benchmark]
-        public unsafe byte[] DeserializeUnsafe()
+        public byte[] Cast_Unsafe_Pointer()
         {
-            var buffer = ArrayPool<byte>.Shared.Rent(CachedMsg.Header.Length);
             var cachedMsg = CachedMsg;
-            fixed (byte* p = buffer)
+            fixed (byte* p = CachedArray)
                 *(MsgLogin*)p = *&cachedMsg;
 
-            return buffer;
-        }
-        [Benchmark]
-        public unsafe byte[] DeserializeMemoryMarhsal()
-        {
-            var buffer = ArrayPool<byte>.Shared.Rent(CachedMsg.Header.Length);
-            MemoryMarshal.TryWrite(buffer, ref CachedMsg);
-            return buffer;
+            return CachedArray;
         }
     }
 }

@@ -38,7 +38,7 @@ public static class PacketRouter
          var msgLogin = (MsgLogin)packet;
             var username = msgLogin.GetUsername();
             var password = msgLogin.GetPassword();
-            Console.WriteLine($"MsgLogin: {username} with password {password} (compressed: {msgLogin.Header.Compressed}) requesting login.");
+            Console.WriteLine($"MsgLogin: {username} with password {password} (compressed: {msgLogin.Compressed}) requesting login.");
 
             var user = new User
             {

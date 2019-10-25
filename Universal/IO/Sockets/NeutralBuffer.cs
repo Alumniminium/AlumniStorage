@@ -24,31 +24,27 @@ namespace Universal.IO.Sockets
         }
         internal void Decompress()
         {
-            using (var bs = new BrotliStream(Stream.Null, CompressionLevel.Fastest))
+            using (var ms = new MemoryStream(MergeBuffer))
+            using (var bs = new BrotliStream(ms, CompressionMode.Decompress))
             {
-                for (int i = 0; i < 1_000; i++)
-                {
-                    bs.WriteByte((byte)i);
-                }
+                ms.Seek(sizeof(MsgHeader),SeekOrigin.Begin);
+                bs.Read(MergeBuffer,sizeof(MsgHeader),BytesRequired-sizeof(MsgHeader));
             }
-            var chunk = MergeBuffer.AsSpan().Slice(MsgHeader.SIZE, BytesRequired - MsgHeader.SIZE);
-            var decompressed = QuickLZ.decompress(chunk);
-
-            for (int i = 0; i < 4; i++)
-                MergeBuffer[i] = chunk[i];
-
-            Buffer.BlockCopy(decompressed, 0, MergeBuffer, MsgHeader.SIZE, decompressed.Length);
         }
-
         internal int Compress(int size)
         {
-            var compressedChunk = QuickLZ.compress(SendBuffer.AsSpan(MsgHeader.SIZE, size - MsgHeader.SIZE).ToArray(), size - MsgHeader.SIZE, 3, ArrayPool<byte>.Shared.Rent(400 + size - MsgHeader.SIZE).SelfSetToDefaults());
-            var compressedSize = compressedChunk.Length;
-            var sizeBytes = BitConverter.GetBytes(compressedSize + MsgHeader.SIZE);
-            Buffer.BlockCopy(sizeBytes, 0, SendBuffer, 0, sizeBytes.Length);
-            Buffer.BlockCopy(compressedChunk, 0, SendBuffer, MsgHeader.SIZE, compressedSize);
-            ArrayPool<byte>.Shared.Return(compressedChunk);
-            return compressedSize + MsgHeader.SIZE;
+            using (var ms = new MemoryStream(SendBuffer))
+            using (var bs = new BrotliStream(ms, CompressionMode.Compress))
+            {
+                ms.Seek(sizeof(MsgHeader),SeekOrigin.Begin);
+                bs.Write(SendBuffer,sizeof(MsgHeader),size-sizeof(MsgHeader));
+                bs.Flush();                
+                size=(int)ms.Position+1;
+            }
+            
+            Span<byte> header = BitConverter.GetBytes(size);
+            header.CopyTo(SendBuffer.AsSpan().Slice(0,4));
+            return size;
         }
     }
 }
