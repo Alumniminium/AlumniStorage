@@ -56,13 +56,13 @@ namespace Client
                             array[i] = (byte)random.Next(0, 255);
                         }
                         Stopwatch.Restart();
-                        var msgBench = MsgBench.Create(array, false);
+                        var msgBench = MsgBench.Create(array, true);
                         Client.Send(msgBench);
                         break;
                     case "send":
                         var user = (User)Client.StateObject;
                         Console.WriteLine("Requesting Token...");
-                        user.Send(MsgToken.Create("transcoder", 0,false));
+                        user.Send(MsgToken.Create("transcoder", 0,true));
                         while (!user.Tokens.ContainsKey(0))
                             Thread.Sleep(1);
                         Console.WriteLine("Uploading... using "+user.Tokens[0]);

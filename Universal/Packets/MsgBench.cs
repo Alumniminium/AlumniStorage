@@ -10,7 +10,7 @@ namespace Universal.Packets
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct MsgBench
     {
-        public const int MAX_ARRAY_LENGTH = 5;
+        public const int MAX_ARRAY_LENGTH = 100_000;
         public int Length{get;set;}
         public bool Compressed{get;set;}
         public PacketType Id{get;set;}
@@ -18,10 +18,8 @@ namespace Universal.Packets
 
         public byte[] GetArray()
         {
-            var buffer = new byte[MAX_ARRAY_LENGTH];
-            for (int i = 0; i < MAX_ARRAY_LENGTH; i++)
-                buffer[i] = Array[i];
-            return buffer;
+            fixed (byte* b = Array)
+                return Unsafe.Read<byte[]>(b);
         }
 
         public void SetArray(byte[] array)
@@ -50,7 +48,7 @@ namespace Universal.Packets
         public static implicit operator MsgBench(byte[] msg)
         {
             fixed (byte* p = msg)
-                return *(MsgBench*)p;
+                return Unsafe.Read<MsgBench>(p);
         }
     }
 }

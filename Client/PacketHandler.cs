@@ -6,6 +6,7 @@ using Universal.IO;
 using Universal.IO.Sockets.Client;
 using Universal.Packets;
 using Client;
+using Universal.IO.FastConsole;
 
 public static class PacketRouter
 {
@@ -16,7 +17,7 @@ public static class PacketRouter
         switch (packetId)
         {
             case 1:
-                ProcessLogin(clientSocket,packet);
+                ProcessLogin(clientSocket, packet);
                 break;
             case 2:
                 ReceiveFile(user, packet);
@@ -35,25 +36,27 @@ public static class PacketRouter
 
     private static void ProcessLogin(ClientSocket client, byte[] packet)
     {
-         var msgLogin = (MsgLogin)packet;
-            var username = msgLogin.GetUsername();
-            var password = msgLogin.GetPassword();
-            Console.WriteLine($"MsgLogin: {username} with password {password} (compressed: {msgLogin.Compressed}) requesting login.");
+        var msgLogin = (MsgLogin)packet;
+        var username = msgLogin.GetUsername();
+        var password = msgLogin.GetPassword();
+        Console.WriteLine($"MsgLogin: {username} with password {password} (compressed: {msgLogin.Compressed}) requesting login.");
 
-            var user = new User
-            {
-                Socket = client,
-                Username = username,
-                Password = password,
-                Id = msgLogin.UniqueId
-            };
-            user.Socket.OnDisconnect += user.OnDisconnect;
-            user.Socket.StateObject = user;
-    }   
+        var user = new User
+        {
+            Socket = client,
+            Username = username,
+            Password = password,
+            Id = msgLogin.UniqueId
+        };
+        user.Socket.OnDisconnect += user.OnDisconnect;
+        user.Socket.StateObject = user;
+    }
     private static void Pong(User user, byte[] packet)
     {
         Program.Stopwatch.Stop();
-        Console.WriteLine("Took: "+Program.Stopwatch.Elapsed.TotalMilliseconds);
+        FConsole.WriteLine("Took: " + Program.Stopwatch.Elapsed.TotalMilliseconds);
+        Program.Stopwatch.Restart();
+        Program.Client.Send(MsgBench.Create(new byte[100_000],true));
     }
 
     private static void MsgTokenHandler(User user, byte[] packet)
@@ -113,6 +116,6 @@ public static class PacketRouter
             }
         }
 
-        user.Tokens.TryRemove(tokenId,out _);
+        user.Tokens.TryRemove(tokenId, out _);
     }
 }

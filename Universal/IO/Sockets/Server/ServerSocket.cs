@@ -16,7 +16,7 @@ namespace Universal.IO.Sockets.Server
         internal static SocketAsyncEventArgs AcceptArgs;
         internal static readonly AutoResetEvent AcceptSync = new AutoResetEvent(true);
 
-        public static void Start(ushort port)
+        public static void Start(ushort port, int bufferSize= 500_500)
         {
             Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
             {
@@ -27,7 +27,7 @@ namespace Universal.IO.Sockets.Server
 
             AcceptArgs = new SocketAsyncEventArgs();
             AcceptArgs.Completed += Accepted;
-            AcceptArgs.UserToken = new ClientSocket(500_500);
+            AcceptArgs.UserToken = new ClientSocket(bufferSize);
             StartAccepting();
         }
 

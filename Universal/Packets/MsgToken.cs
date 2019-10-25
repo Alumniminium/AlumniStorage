@@ -9,9 +9,7 @@ namespace Universal.Packets
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct MsgToken
     {
-        public const int MAX_TOKEN_LENGTH = 32;
-        public const int MAX_PATH_LENGTH = 32;
-        
+        public const int MAX_TOKEN_LENGTH = 32;        
         public int Length{get;set;}
         public bool Compressed{get;set;}
         public PacketType Id{get;set;}
