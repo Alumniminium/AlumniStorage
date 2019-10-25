@@ -59,13 +59,11 @@ public static class PacketRouter
     private static void MsgTokenHandler(User user, byte[] packet)
     {
         var msgToken = (MsgToken)packet;
-        var token = msgToken.GetToken();
-        var path = msgToken.GetPath();
 
-        if (user.Tokens.ContainsKey(path))
-            user.Tokens[path] = token;
+        if (user.Tokens.ContainsKey(msgToken.UniqueId))
+            user.Tokens[msgToken.UniqueId] = msgToken.GetToken;
         else
-            user.Tokens.Add(path, token);
+            user.Tokens.TryAdd(msgToken.UniqueId, msgToken.GetToken);
     }
 
     private static void ReceiveFile(User user, byte[] packet)
@@ -98,8 +96,9 @@ public static class PacketRouter
         }
 
     }
-    public static void SendFile(User user, string path, string token)
+    public static void SendFile(User user, string path, int tokenId)
     {
+        string token = user.Tokens[tokenId];
         using (var fileStream = File.Open(path, FileMode.Open, FileAccess.Read))
         {
             var fileSize = fileStream.Length;
@@ -113,5 +112,7 @@ public static class PacketRouter
                 user.Send(msgFile);
             }
         }
+
+        user.Tokens.TryRemove(tokenId,out _);
     }
 }

@@ -17,16 +17,19 @@ namespace Benchmarks
             CachedMsg = MsgLogin.Create("user", "pass", true, Universal.Packets.Enums.MsgLoginType.Login);
             CachedArray = CachedMsg;
         }        
+        [Benchmark]
         public byte[] Cast_Safe_TryWrite()
         {
             MemoryMarshal.TryWrite(CachedArray, ref CachedMsg);
             return CachedArray;
         }        
+        [Benchmark]
         public byte[] Cast_Safe_Write()
         {
             MemoryMarshal.Write(CachedArray, ref CachedMsg);
             return CachedArray;
         }
+        [Benchmark]
         public byte[] Cast_Unsafe_Pointer()
         {
             var cachedMsg = CachedMsg;

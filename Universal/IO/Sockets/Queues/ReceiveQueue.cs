@@ -10,7 +10,7 @@ namespace Universal.IO.Sockets.Queues
     public static class ReceiveQueue
     {
         private static Thread _workerThread;
-        private unsafe static int MIN_HEADER_SIZE = sizeof(MsgHeader);
+        private unsafe static int MIN_HEADER_SIZE = 4;
         private static int COMPRESSION_FLAG_OFFSET = 4;
         public static Action<ClientSocket, byte[]> OnPacket;
         private static ChannelWriter<SocketAsyncEventArgs> _writer;

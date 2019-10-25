@@ -15,7 +15,6 @@ namespace Benchmarks
             ptr->Length = sizeof(MsgLogin);
             ptr->Id = PacketType.MsgLogin;
             ptr->Compressed = true;
-            ptr->Type = 0;
             ptr->SetUsername("user");
             ptr->SetPassword("pass");
             return *ptr;
@@ -27,7 +26,6 @@ namespace Benchmarks
             ptr.Id = PacketType.MsgLogin;
             ptr.Length = sizeof(MsgLogin);
             ptr.Compressed = true;
-            ptr.Type = 0;
             ptr.SetUsername("user");
             ptr.SetPassword("pass");
             return ptr;
@@ -38,7 +36,6 @@ namespace Benchmarks
             ptr.Id = PacketType.MsgLogin;
             ptr.Length = sizeof(MsgLogin);
             ptr.Compressed = true;
-            ptr.Type = 0;
             ptr.SetUsername("user");
             ptr.SetPassword("pass");
             return ptr;

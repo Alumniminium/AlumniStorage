@@ -13,8 +13,8 @@ namespace Universal.Packets
         public const int MAX_PASSWORD_LENGTH = 32;
 
         public int Length{get;set;}
-        public PacketType Id{get;set;}
         public bool Compressed{get;set;}
+        public PacketType Id{get;set;}
         public int UniqueId { get; set; }
         public MsgLoginType Type { get; set; }
 
@@ -34,7 +34,7 @@ namespace Universal.Packets
 
         public void SetUsername(string username)
         {
-            username = username.ToLength(MAX_PASSWORD_LENGTH);
+            username = username.ToLength(MAX_USERNAME_LENGTH);
             for (var i = 0; i < username.Length; i++)
                 Username[i] = username[i];
         }

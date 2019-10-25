@@ -6,7 +6,7 @@
         {
             if (string.IsNullOrEmpty(str))
                 str = "STRING NULL";
-            return str.PadRight(length, '\0');
+            return str.PadRight(length+1, '\0');
         }
 
         public static string CenterLength(this string str, int length)

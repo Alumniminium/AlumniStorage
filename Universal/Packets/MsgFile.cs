@@ -10,11 +10,11 @@ namespace Universal.Packets
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct MsgFile
     {
-        public const int TOKEN_LENGTH = 32;
+        public const int TOKEN_LENGTH = 33;
         public const int MAX_CHUNK_SIZE = 500_000;
         public int Length{get;set;}
-        public PacketType Id{get;set;}
         public bool Compressed{get;set;}
+        public PacketType Id{get;set;}
         public bool CreateFile;
         public long FileSize;
         public int ChunkSize;
@@ -48,7 +48,7 @@ namespace Universal.Packets
             MsgFile* ptr = stackalloc MsgFile[1];
             
             ptr->Length = sizeof(MsgFile);
-            ptr->Compressed = true;
+            ptr->Compressed = false;
             ptr->Id = PacketType.MsgFile;
 
             ptr->FileSize = size;

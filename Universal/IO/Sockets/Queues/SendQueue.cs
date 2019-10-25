@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using System.Linq;
+using System.Buffers;
 using System.Reflection.Emit;
 using Universal.IO.Sockets.Client;
 using System.Collections.Concurrent;
@@ -51,7 +52,7 @@ namespace Universal.IO.Sockets.Queues
 
                     connection.SendSync.WaitOne();
 
-                    Buffer.BlockCopy(packet, 0, connection.Buffer.SendBuffer, 0, size);
+                    packet.AsSpan().Slice(0,Math.Min(packet.Length,size)).CopyTo(connection.Buffer.SendBuffer);
                     ArrayPool<byte>.Shared.Return(packet);
 
                     if (connection.Buffer.SendBuffer[COMPRESSION_FLAG_OFFSET] == 1)

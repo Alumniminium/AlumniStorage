@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Buffers;
 using System;
 using System.IO;
@@ -24,27 +25,26 @@ namespace Universal.IO.Sockets
         }
         internal void Decompress()
         {
-            using (var ms = new MemoryStream(MergeBuffer))
-            using (var bs = new BrotliStream(ms, CompressionMode.Decompress))
-            {
-                ms.Seek(6,SeekOrigin.Begin);
-                bs.Read(MergeBuffer,6,BytesRequired-6);
-            }
+            var chunk = MergeBuffer.AsSpan().Slice(6, BytesRequired - 6);
+            var decompressed = QuickLZ.decompress(chunk);
+            var sizeBytes = BitConverter.GetBytes(decompressed.Length + 6);
+            sizeBytes.AsSpan().CopyTo(MergeBuffer);
+            decompressed.AsSpan().CopyTo(MergeBuffer.AsSpan().Slice(6));
         }
+
         internal int Compress(int size)
         {
-            using (var ms = new MemoryStream(SendBuffer))
-            using (var bs = new BrotliStream(ms, CompressionMode.Compress))
-            {
-                ms.Seek(6,SeekOrigin.Begin);
-                bs.Write(SendBuffer,6,size-6);
-                bs.Flush();                
-                size=(int)ms.Position+1;
-            }
-            
-            Span<byte> header = BitConverter.GetBytes(size);
-            header.CopyTo(SendBuffer.AsSpan().Slice(0,4));
-            return size;
+            var buffer=ArrayPool<byte>.Shared.Rent(400 + size - 6);
+            var compressedChunk = QuickLZ.compress(SendBuffer.AsSpan(6, size - 6).ToArray(), size - 6, 3, buffer);
+            var compressedSize = compressedChunk.Length;
+            var sizeBytes = BitConverter.GetBytes(compressedSize + 6);
+
+            sizeBytes.AsSpan().CopyTo(SendBuffer);
+            compressedChunk.AsSpan().CopyTo(SendBuffer.AsSpan().Slice(6));
+
+            ArrayPool<byte>.Shared.Return(compressedChunk);
+            ArrayPool<byte>.Shared.Return(buffer);
+            return compressedSize + 6;
         }
     }
 }

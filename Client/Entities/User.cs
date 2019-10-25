@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using Universal.IO.Sockets.Client;
@@ -12,11 +13,11 @@ namespace Client.Entities
         public string Email { get; set; }
         public ClientSocket Socket { get; set; }
         public string CurrentFileName { get; set; }
-        public Dictionary<string,string> Tokens;
+        public ConcurrentDictionary<int,string> Tokens;
 
         public User()
         {
-            Tokens = new Dictionary<string, string>();
+            Tokens = new ConcurrentDictionary<int, string>();
         }
 
         public void OnDisconnect()

@@ -39,22 +39,22 @@ namespace Server
         private static void MsgTokenHandler(User user, byte[] packet)
         {
             var msgToken = (MsgToken)packet;
-            var path = msgToken.GetPath();
+            var path = msgToken.GetToken;
 
             var token = "";
             if (!user.Tokens.ContainsKey(path))
             {
-                if(!Tokens.ContainsKey(path))
+                if (!Tokens.ContainsKey(path))
                 {
-                    token = Guid.NewGuid().ToString().Replace("-","");
-                    Tokens.Add(path,token);
-                    user.Tokens.Add(path,token);
+                    token = Guid.NewGuid().ToString().Replace("-", "");
+                    Tokens.Add(path, token);
+                    user.Tokens.Add(path, token);
                 }
             }
             else
                 token = user.Tokens[path];
-            Console.WriteLine("Token Created: "+token+" for: "+path);
-            msgToken = MsgToken.Create(token,path,true,0);
+            Console.WriteLine("Token Created: " + token + " for: " + path);
+            msgToken = MsgToken.Create(token, 0, false);
             user.Send(msgToken);
         }
         private static void Pong(User user, byte[] packet)
@@ -108,37 +108,39 @@ namespace Server
         {
             var msgFile = (MsgFile)packet;
             var token = msgFile.GetToken();
-            Console.WriteLine("Token: "+token);
-            var kvp = user.Tokens.FirstOrDefault(n=> n.Value == token);
-            var path = "/tmp/"+kvp.Key;
-            Console.WriteLine("Path: "+path);
-            if(string.IsNullOrEmpty(kvp.Key))
+            var kvp = user.Tokens.FirstOrDefault(n => n.Value == token);
+            var path = "/tmp/" + kvp.Key;
+
+            if (string.IsNullOrEmpty(kvp.Key))
                 user.Disconnect("No token");
 
-            var mode = FileMode.Create;
-            if (File.Exists(user.CurrentFileName))
-                mode = FileMode.Append;
-            if (msgFile.CreateFile)
-                mode = FileMode.Truncate;
+            var mode = msgFile.CreateFile ? FileMode.Create : FileMode.Append;
 
-            using (var filestream = new FileStream(user.CurrentFileName, mode))
+            using (var filestream = new FileStream(path, mode))
             {
                 var chunk = msgFile.GetChunk();
                 filestream.Write(chunk);
 
                 if (filestream.Position == msgFile.FileSize)
                 {
-                    int count = 0;
-                    double size = filestream.Position;
-                    while (size > 1000)
-                    {
-                        size = size / 1024;
-                        count++;
-                    }
-                    Console.WriteLine($"File {user.CurrentFileName} ({size.ToString("###.##")} {(FormatEnum)count}) received!");
+                    user.Tokens.Remove(kvp.Key);
+                    Tokens.Remove(kvp.Key);
+                    Log(path, filestream);
                 }
             }
 
+        }
+
+        private static void Log(string path, FileStream filestream)
+        {
+            int count = 0;
+            double size = filestream.Position;
+            while (size > 1000)
+            {
+                size = size / 1024;
+                count++;
+            }
+            Console.WriteLine($"File {path} ({size.ToString("###.##")} {(FormatEnum)count}) received!");
         }
     }
 }

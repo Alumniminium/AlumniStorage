@@ -11,7 +11,6 @@ namespace Server.Entities
         public string Password { get; set; }
         public string Email { get; set; }
         public ClientSocket Socket { get; set; }
-        public string CurrentFileName { get; set; }
         public Dictionary<string,string> Tokens {get;set;}
 
         public User()

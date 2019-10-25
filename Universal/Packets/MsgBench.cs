@@ -12,8 +12,8 @@ namespace Universal.Packets
     {
         public const int MAX_ARRAY_LENGTH = 5;
         public int Length{get;set;}
-        public PacketType Id{get;set;}
         public bool Compressed{get;set;}
+        public PacketType Id{get;set;}
         public fixed byte Array[MAX_ARRAY_LENGTH];
 
         public byte[] GetArray()
@@ -24,7 +24,7 @@ namespace Universal.Packets
             return buffer;
         }
 
-        public void SetToken(byte[] array)
+        public void SetArray(byte[] array)
         {
             fixed (byte* b = Array)
                 Unsafe.Copy(b, ref array);
@@ -38,7 +38,7 @@ namespace Universal.Packets
             ptr->Compressed = true;
             ptr->Id = PacketType.MsgBench;
 
-            ptr->SetToken(array);
+            ptr->SetArray(array);
             return *ptr;
         }
         public static implicit operator byte[](MsgBench msg)
