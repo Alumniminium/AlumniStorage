@@ -44,6 +44,20 @@ namespace Universal.Packets
         }
         public static MsgLogin Create(string user, string pass, bool compression, MsgLoginType type)
         {
+            MsgLogin* ptr = stackalloc MsgLogin[1];
+            ptr->Header = new MsgHeader
+            {
+                Length = sizeof(MsgLogin),
+                Compressed = compression,
+                Id = PacketType.MsgLogin,
+            };
+            ptr->Type = type;
+            ptr->SetUsername(user);
+            ptr->SetPassword(pass);
+            return *ptr;
+        }
+        public static MsgLogin CreateSpan(string user, string pass, bool compression, MsgLoginType type)
+        {
             Span<MsgLogin> span = stackalloc MsgLogin[1];
             ref var ptr = ref MemoryMarshal.GetReference(span);
             ptr.Header = new MsgHeader
@@ -59,9 +73,8 @@ namespace Universal.Packets
         }
         public static implicit operator byte[](MsgLogin msg)
         {
-            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length).SelfSetToDefaults();
-            fixed (byte* p = buffer)
-                *(MsgLogin*)p = *&msg;
+            var buffer = ArrayPool<byte>.Shared.Rent(msg.Header.Length);
+            MemoryMarshal.TryWrite(buffer, ref msg);
             return buffer;
         }
         public static implicit operator MsgLogin(byte[] msg)

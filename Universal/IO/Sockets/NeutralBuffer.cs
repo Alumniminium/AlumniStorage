@@ -24,6 +24,13 @@ namespace Universal.IO.Sockets
         }
         internal void Decompress()
         {
+            using (var bs = new BrotliStream(Stream.Null, CompressionLevel.Fastest))
+            {
+                for (int i = 0; i < 1_000; i++)
+                {
+                    bs.WriteByte((byte)i);
+                }
+            }
             var chunk = MergeBuffer.AsSpan().Slice(MsgHeader.SIZE, BytesRequired - MsgHeader.SIZE);
             var decompressed = QuickLZ.decompress(chunk);
 

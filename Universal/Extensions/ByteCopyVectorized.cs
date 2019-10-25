@@ -24,13 +24,6 @@ namespace Universal.Extensions
         {
             if (Vector.IsHardwareAccelerated)
             {
-                if (count > 512 + 64)
-                {
-                    // In-built copy faster for large arrays (vs repeated bounds checks on Vector.ctor?)
-                    Buffer.BlockCopy(src, srcOffset, dst, dstOffset, count);
-                    return;
-                }
-
                 while (count >= VectorSpan4)
                 {
                     new Vector<byte>(src, srcOffset).CopyTo(dst, dstOffset);
