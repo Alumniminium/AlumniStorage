@@ -56,7 +56,7 @@ public static class PacketRouter
         Program.Stopwatch.Stop();
         FConsole.WriteLine("Took: " + Program.Stopwatch.Elapsed.TotalMilliseconds);
         Program.Stopwatch.Restart();
-        Program.Client.Send(MsgBench.Create(new byte[100_000],true));
+        Program.Client.Send(MsgBench.Create(new byte[100_000],false));
     }
 
     private static void MsgTokenHandler(User user, byte[] packet)

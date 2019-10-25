@@ -63,7 +63,7 @@ namespace Server
             var array = msgBench.GetArray();
             //array = array.Reverse().ToArray();
 
-            msgBench = MsgBench.Create(array, true);
+            msgBench = MsgBench.Create(array, false);
             user.Send(msgBench);
         }
         private static void ProcessLogin(ClientSocket userSocket, byte[] packet)
