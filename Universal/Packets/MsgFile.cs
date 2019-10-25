@@ -35,7 +35,7 @@ namespace Universal.Packets
         public Span<byte> GetChunk()
         {
             fixed (byte* b = Chunk)
-                return new Span<byte>(b, ChunkSize);
+                return Unsafe.Read<byte[]>(b);
         }
         public void SetChunk(byte[] chunk)
         {

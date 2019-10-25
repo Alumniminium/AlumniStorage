@@ -1,13 +1,19 @@
 using System;
 using BenchmarkDotNet.Attributes;
 using Universal.Extensions;
+using System.Runtime.CompilerServices;
 
 namespace Benchmarks
 {
+    public unsafe struct MyStruct
+    {
+        public fixed byte fixedSource[100_000];
+    }
     [MemoryDiagnoser]
     [ThreadingDiagnoser]
-    public class CopyTests
+    public unsafe class CopyTests
     {
+        private MyStruct StructSource;
         private byte[] source;
         private byte[] destination;
 
@@ -22,12 +28,23 @@ namespace Benchmarks
             new Random(42).NextBytes(source);
         }
         [Benchmark]
+        public byte[] UnsafeCopy()
+        {
+            fixed(byte* ptr = StructSource.fixedSource)
+            return Unsafe.Read<byte[]>(ptr);
+        }
+        [Benchmark]
+        public Span<byte> UnsafeSpanCopy()
+        {
+            fixed (byte* b = StructSource.fixedSource)
+                return new Span<byte>(b, 100_000);
+        }
+        
         public byte[] SpanCopy()
         {
             source.AsSpan().CopyTo(destination);
             return destination;
         }
-        [Benchmark]
         public byte[] VectorizedCopy()
         {
             source.VectorizedCopy(0, destination, 0, destination.Length);

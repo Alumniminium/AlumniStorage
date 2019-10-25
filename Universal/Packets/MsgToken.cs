@@ -9,16 +9,16 @@ namespace Universal.Packets
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct MsgToken
     {
-        public const int MAX_TOKEN_LENGTH = 32;        
-        public int Length{get;set;}
-        public bool Compressed{get;set;}
-        public PacketType Id{get;set;}
-        public int UniqueId{get;set;}
+        public const int MAX_TOKEN_LENGTH = 32;
+        public int Length { get; set; }
+        public bool Compressed { get; set; }
+        public PacketType Id { get; set; }
+        public int UniqueId { get; set; }
         public fixed char Token[MAX_TOKEN_LENGTH];
 
         public string GetToken
         {
-            get 
+            get
             {
                 fixed (char* p = Token)
                     return new string(p);
@@ -32,13 +32,13 @@ namespace Universal.Packets
                 Token[i] = token[i];
         }
 
-        public static MsgToken Create(string token,int uniqueId, bool compression)
+        public static MsgToken Create(string token, int uniqueId, bool compression)
         {
             MsgToken* ptr = stackalloc MsgToken[1];
             ptr->Length = sizeof(MsgToken);
             ptr->Compressed = compression;
             ptr->Id = PacketType.MsgToken;
-            ptr->UniqueId=uniqueId;
+            ptr->UniqueId = uniqueId;
             ptr->SetToken(token);
 
             return *ptr;
@@ -51,7 +51,8 @@ namespace Universal.Packets
         }
         public static implicit operator MsgToken(byte[] msg)
         {
-            return MemoryMarshal.Read<MsgToken>(msg);
+            fixed (byte* p = msg)
+                return *(MsgToken*)p;
         }
     }
 }

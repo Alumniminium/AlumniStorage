@@ -48,7 +48,7 @@ namespace Universal.Packets
         public static implicit operator MsgBench(byte[] msg)
         {
             fixed (byte* p = msg)
-                return Unsafe.Read<MsgBench>(p);
+                return *(MsgBench*)p;
         }
     }
 }
