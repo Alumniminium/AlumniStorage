@@ -36,8 +36,7 @@ namespace Universal.IO.Sockets.Queues
                 while (_reader.TryRead(out var e))
                 {
                     AssemblePacket(e);
-                    ((ClientSocket)e.UserToken).ReceiveSync.Set();
-                    Thread.Yield();
+                    ((ClientSocket)e.UserToken).Receive();
                 }
             }
         }

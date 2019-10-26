@@ -22,12 +22,18 @@ namespace Universal.IO.Sockets.Client
 
         internal readonly NeutralBuffer Buffer;
         internal readonly AutoResetEvent SendSync = new AutoResetEvent(true);
-        internal readonly AutoResetEvent ReceiveSync = new AutoResetEvent(false);
         internal readonly SocketAsyncEventArgs ReceiveArgs;
         internal readonly SocketAsyncEventArgs SendArgs;
 
         public ClientSocket(int bufferSize = 2_000_000, object stateObject = null)
         {
+            Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+            {
+                NoDelay = true,
+                Blocking = false,
+                UseOnlyOverlappedIO = true
+            };
+
             Buffer = new NeutralBuffer(bufferSize);
             StateObject = stateObject;
 
@@ -48,8 +54,6 @@ namespace Universal.IO.Sockets.Client
                 if (IsConnected)
                     Disconnect("ConnectAsync() IsConnected == true");
 
-                Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                Socket.NoDelay=true;
                 var connectArgs = new SocketAsyncEventArgs
                 {
                     RemoteEndPoint = new IPEndPoint(IPAddress.Parse(host), port)
@@ -84,20 +88,21 @@ namespace Universal.IO.Sockets.Client
                 Disconnect("ClientSocket.Connected() e.SocketError != SocketError.Success");
         }
 
-        private void Received(object sender, SocketAsyncEventArgs e)
+        public void Receive()
+        {
+            if (!Socket.ReceiveAsync(ReceiveArgs))
+                Received(null, ReceiveArgs);
+        }
+        public void Received(object sender, SocketAsyncEventArgs e)
         {
             if (e.SocketError != SocketError.Success || e.BytesTransferred == 0)
             {
                 Disconnect("ClientSocket.Received() if (e.SocketError != SocketError.Success || e.BytesTransferred == 0)");
                 return;
             }
-
             try
             {
                 ReceiveQueue.Add(e);
-                ReceiveSync.WaitOne();
-                if (!Socket.ReceiveAsync(e))
-                    Received(null, e);
             }
             catch (Exception ex)
             {
