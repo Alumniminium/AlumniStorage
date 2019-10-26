@@ -33,7 +33,7 @@ namespace Universal.Packets
             MsgBench* ptr = stackalloc MsgBench[1];
 
             ptr->Length = sizeof(MsgBench);
-            ptr->Compressed = true;
+            ptr->Compressed = compression;
             ptr->Id = PacketType.MsgBench;
 
             ptr->SetArray(array);

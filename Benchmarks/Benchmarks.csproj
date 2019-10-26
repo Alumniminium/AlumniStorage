@@ -5,9 +5,8 @@
     <LangVersion>8</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
      <PublishTrimmed>true</PublishTrimmed>
-    <PublishSingleFile>true</PublishSingleFile>
+    <PublishSingleFile>false</PublishSingleFile>
     <PublishReadyToRun>false</PublishReadyToRun>
-    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
   </PropertyGroup>
 
 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

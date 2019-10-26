@@ -113,10 +113,9 @@ namespace Universal.IO.Sockets.Client
 
         private void Sent(object sender, SocketAsyncEventArgs e)
         {
-            if (e.SocketError == SocketError.Success)
-                SendSync.Set();
-            else
+            if (e.SocketError != SocketError.Success)
                 Disconnect("ClientSocket.Sent() e.SocketError != SocketError.Success");
+            SendSync.Set();
         }
         public void Disconnect(string reason)
         {

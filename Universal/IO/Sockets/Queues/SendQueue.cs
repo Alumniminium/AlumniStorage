@@ -50,17 +50,15 @@ namespace Universal.IO.Sockets.Queues
                     var packet = item.Packet;
                     var size = item.Size;
 
-                    connection.SendSync.WaitOne();
-
-                    packet.AsSpan().Slice(0,Math.Min(packet.Length,size)).CopyTo(connection.Buffer.SendBuffer);
+                    packet.AsSpan().CopyTo(connection.Buffer.SendBuffer);
                     ArrayPool<byte>.Shared.Return(packet);
 
                     if (connection.Buffer.SendBuffer[COMPRESSION_FLAG_OFFSET] == 1)
                         size = connection.Buffer.Compress(size);
 
                     item.Args.SetBuffer(connection.Buffer.SendBuffer, 0, size);
-                    if (!connection.Socket.SendAsync(item.Args))
-                        connection.SendSync.Set();
+                    if (connection.Socket.SendAsync(item.Args))
+                        connection.SendSync.WaitOne();
                 }
             }
         }

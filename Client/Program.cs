@@ -53,7 +53,7 @@ namespace Client
                         {
                             array[i] = (byte)random.Next(0, 255);
                         }
-                        var msgBench = MsgBench.Create(array, true);
+                        var msgBench = MsgBench.Create(array, false);
                         Client.Send(msgBench);
                         break;
                     case "send":
