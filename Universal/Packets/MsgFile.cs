@@ -7,24 +7,32 @@ using Universal.Packets.Enums;
 
 namespace Universal.Packets
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Explicit)]
     public unsafe struct MsgFile
     {
         public const int TOKEN_LENGTH = 32;
         public const int MAX_CHUNK_SIZE = 500_000;
-        public int Length{get;set;}
-        public bool Compressed{get;set;}
-        public PacketType Id{get;set;}
+        [FieldOffset(0)]
+        public int Length;
+        [FieldOffset(4)]
+        public bool Compressed;
+        [FieldOffset(5)]
+        public PacketType Id;
+        [FieldOffset(6)]
         public bool CreateFile;
+        [FieldOffset(7)]
         public long FileSize;
+        [FieldOffset(15)]
         public int ChunkSize;
+        [FieldOffset(19)]
         public fixed char Token[TOKEN_LENGTH];
+        [FieldOffset(83)]
         public fixed byte Chunk[MAX_CHUNK_SIZE];
 
         public string GetToken()
         {
             fixed (char* p = Token)
-                return new string(p);
+                return new string(p,0,TOKEN_LENGTH);
         }
         public void SetToken(string token)
         {
@@ -32,15 +40,23 @@ namespace Universal.Packets
             for (var i = 0; i < token.Length; i++)
                 Token[i] = token[i];
         }
-        public Span<byte> GetChunk()
+        public byte[] GetChunk()
         {
-            fixed (byte* b = Chunk)
-                return Unsafe.Read<byte[]>(b);
+            var buffer = ArrayPool<byte>.Shared.Rent(ChunkSize);
+            fixed (byte* pSource = Chunk, pTarget = buffer)
+            {
+                for (int i = 0; i < ChunkSize; i++)
+                    pTarget[i] = pSource[i];
+            }
+            return buffer;
         }
         public void SetChunk(byte[] chunk)
-        {
-            fixed (byte* b = Chunk)
-                Unsafe.Copy(b, ref chunk);
+        {    
+            fixed (byte* pSource = chunk, pTarget = Chunk)
+            {
+                for (int i = 0; i < chunk.Length; i++)
+                    pTarget[i] = pSource[i];
+            }
         }
 
         public static MsgFile Create(string token, long size, int chunkSize, byte[] chunk, bool create)
@@ -63,7 +79,8 @@ namespace Universal.Packets
         public static implicit operator byte[](MsgFile msg)
         {
             var buffer = ArrayPool<byte>.Shared.Rent(sizeof(MsgFile));
-            MemoryMarshal.Write<MsgFile>(buffer,ref msg);
+            fixed (byte* p = buffer)
+                *(MsgFile*)p = *&msg;
             return buffer;
         }
         public static implicit operator MsgFile(byte[] msg)

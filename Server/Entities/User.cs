@@ -1,6 +1,9 @@
+using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using Universal.IO.Sockets.Client;
+using Universal.Packets;
 
 namespace Server.Entities
 {
@@ -25,6 +28,24 @@ namespace Server.Entities
         public void Disconnect(string reason) => Socket.Disconnect(reason: reason);
 
         public void Send(byte[] packet) => Socket?.Send(packet);
+        public void SendFile(string path)
+        {
+            using (var fileStream = File.Open(path, FileMode.Open, FileAccess.Read))
+            {
+                var fileName = Path.GetFileName(path);
+                var fileSize = fileStream.Length;
+                var chunk = ArrayPool<byte>.Shared.Rent(MsgFile.MAX_CHUNK_SIZE);
+
+                while (fileStream.Position != fileStream.Length)
+                {
+                    bool firstRead = fileStream.Position == 0;
+                    var readBytes = fileStream.Read(chunk, 0, chunk.Length);
+                    var msgFile = MsgFile.Create(fileName, fileSize, readBytes, chunk, firstRead);
+                    Send(msgFile);
+                    ArrayPool<byte>.Shared.Return(chunk);
+                }
+            }
+        }
         public string GetIp() => ((IPEndPoint)Socket.Socket.RemoteEndPoint).Address.ToString();
 
         public override string ToString() => $"UserId: {Id} | Name: {Username} | Password: {Password} | Online: {Socket != null && Socket.IsConnected}";

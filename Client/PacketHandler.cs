@@ -1,4 +1,4 @@
-using System.Linq;
+using System.Buffers;
 using System;
 using System.IO;
 using Client.Entities;
@@ -56,7 +56,7 @@ public static class PacketRouter
         Program.Stopwatch.Stop();
         FConsole.WriteLine("Took: " + Program.Stopwatch.Elapsed.TotalMilliseconds);
         Program.Stopwatch.Restart();
-        Program.Client.Send(MsgBench.Create(new byte[100_000],false));
+        Program.Client.Send(MsgBench.Create(new byte[100_000], false));
     }
 
     private static void MsgTokenHandler(User user, byte[] packet)
@@ -80,11 +80,10 @@ public static class PacketRouter
         if (msgFile.CreateFile)
             mode = FileMode.Truncate;
 
+        var chunk = msgFile.GetChunk();
         using (var filestream = new FileStream(user.CurrentFileName, mode))
         {
-            var chunk = msgFile.GetChunk();
-            filestream.Write(chunk);
-
+            filestream.Write(chunk, 0, msgFile.ChunkSize);
             if (filestream.Position == msgFile.FileSize)
             {
                 int count = 0;
@@ -97,6 +96,7 @@ public static class PacketRouter
                 Console.WriteLine($"File {user.CurrentFileName} ({size.ToString("###.##")} {(FormatEnum)count}) received!");
             }
         }
+        ArrayPool<byte>.Shared.Return(chunk);
 
     }
     public static void SendFile(User user, string path, int tokenId)
@@ -105,7 +105,7 @@ public static class PacketRouter
         using (var fileStream = File.Open(path, FileMode.Open, FileAccess.Read))
         {
             var fileSize = fileStream.Length;
-            var chunk = new byte[MsgFile.MAX_CHUNK_SIZE];
+            var chunk = ArrayPool<byte>.Shared.Rent(MsgFile.MAX_CHUNK_SIZE);
 
             while (fileStream.Position != fileStream.Length)
             {
@@ -113,6 +113,7 @@ public static class PacketRouter
                 var readBytes = fileStream.Read(chunk, 0, chunk.Length);
                 var msgFile = MsgFile.Create(token, fileSize, readBytes, chunk, firstRead);
                 user.Send(msgFile);
+                ArrayPool<byte>.Shared.Return(chunk);
             }
         }
 

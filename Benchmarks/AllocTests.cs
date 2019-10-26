@@ -16,7 +16,7 @@ namespace Benchmarks
         [GlobalSetup]
         public void Setup()
         {
-            CachedMsg = MsgBench.Create(new byte[100_000],true);
+            CachedMsg = MsgBench.Create(new byte[100_000], true);
             CachedArray = CachedMsg;
         }
         [Benchmark]
@@ -24,41 +24,41 @@ namespace Benchmarks
         {
             fixed (byte* p = CachedArray)
                 return *(MsgBench*)p;
-        }  
+        }
         [Benchmark]
         public MsgBench ByteToMsg()
         {
             return CachedArray.ToMsg<MsgBench>();
-        } 
+        }
         [Benchmark]
         public MsgBench Unsafe_Read()
         {
-            fixed(byte* ptr = CachedArray)
-            return Unsafe.Read<MsgBench>(ptr);
-        }         
+            fixed (byte* ptr = CachedArray)
+                return Unsafe.Read<MsgBench>(ptr);
+        }
         [Benchmark]
         public MsgBench MemoryMarshal_Read()
         {
-            return  MemoryMarshal.Read<MsgBench>(CachedArray);;
-        }     
+            return MemoryMarshal.Read<MsgBench>(CachedArray); ;
+        }
         [Benchmark]
         public MsgBench MemoryMarshal_TryRead()
         {
             MemoryMarshal.TryRead(CachedArray, out CachedMsg);
             return CachedArray;
-        }         
+        }
         public byte[] MemoryMarshal_TryWrite()
         {
             MemoryMarshal.TryWrite(CachedArray, ref CachedMsg);
             return CachedArray;
-        }       
-        
+        }
+
         public byte[] Cast_Safe_Write()
         {
             MemoryMarshal.Write(CachedArray, ref CachedMsg);
             return CachedArray;
         }
-        
+
         public byte[] Cast_Unsafe_Pointer()
         {
             var cachedMsg = CachedMsg;

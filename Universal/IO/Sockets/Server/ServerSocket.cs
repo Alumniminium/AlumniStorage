@@ -42,15 +42,13 @@ namespace Universal.IO.Sockets.Server
         {
             var connection = (ClientSocket)e.UserToken;
             ((ClientSocket)connection.ReceiveArgs.UserToken).Socket = e.AcceptSocket;
-
             try
             {
                 if (!e.AcceptSocket.ReceiveAsync(connection.ReceiveArgs))
                     Received(null, connection.ReceiveArgs);
             }
-            catch (Exception exception)
+            catch
             {
-                FConsole.WriteLine(exception);
                 CloseClientSocket(e);
                 AcceptSync.Set();
             }
