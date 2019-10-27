@@ -1,8 +1,5 @@
-﻿using System.Linq;
-using System.Buffers;
-using System.Reflection.Emit;
+﻿using System.Buffers;
 using Universal.IO.Sockets.Client;
-using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading;
 using System;
@@ -16,11 +13,13 @@ namespace Universal.IO.Sockets.Queues
         {
             public SocketAsyncEventArgs Args;
             public byte[] Packet;
-            public int Size => BitConverter.ToInt32(Packet, 0);
+            public int Size;
             public SendQueueItem(SocketAsyncEventArgs args, byte[] packet)
             {
                 Args = args;
-                Packet = packet;
+                Size = BitConverter.ToInt32(packet, 0);
+                Packet = new byte[Size];
+                packet.AsSpan().Slice(0, Size).CopyTo(Packet);
             }
         }
         private static Thread _workerThread;
@@ -50,15 +49,17 @@ namespace Universal.IO.Sockets.Queues
                     var packet = item.Packet;
                     var size = item.Size;
 
-                    packet.AsSpan().CopyTo(connection.Buffer.SendBuffer);
-                    ArrayPool<byte>.Shared.Return(packet);
+                    //connection.SendSync.WaitOne();
+
+                    packet.AsSpan().Slice(0, item.Size).CopyTo(connection.Buffer.SendBuffer);
+                    //ArrayPool<byte>.Shared.Return(packet);
 
                     if (connection.Buffer.SendBuffer[COMPRESSION_FLAG_OFFSET] == 1)
                         size = connection.Buffer.Compress(size);
 
                     item.Args.SetBuffer(connection.Buffer.SendBuffer, 0, size);
-                    if (connection.Socket.SendAsync(item.Args))
-                        connection.SendSync.WaitOne();
+                    if (!connection.Socket.SendAsync(item.Args))
+                        connection.Sent(null, item.Args);
                 }
             }
         }

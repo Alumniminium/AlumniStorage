@@ -83,7 +83,7 @@ public static class PacketRouter
         var chunk = msgFile.GetChunk();
         using (var filestream = new FileStream(user.CurrentFileName, mode))
         {
-            filestream.Write(chunk, 0, msgFile.ChunkSize);
+            filestream.Write(chunk);
             if (filestream.Position == msgFile.FileSize)
             {
                 int count = 0;
@@ -96,8 +96,6 @@ public static class PacketRouter
                 Console.WriteLine($"File {user.CurrentFileName} ({size.ToString("###.##")} {(FormatEnum)count}) received!");
             }
         }
-        ArrayPool<byte>.Shared.Return(chunk);
-
     }
     public static void SendFile(User user, string path, int tokenId)
     {
@@ -105,15 +103,14 @@ public static class PacketRouter
         using (var fileStream = File.Open(path, FileMode.Open, FileAccess.Read))
         {
             var fileSize = fileStream.Length;
-            var chunk = ArrayPool<byte>.Shared.Rent(MsgFile.MAX_CHUNK_SIZE);
+            var chunk = new byte[MsgFile.MAX_CHUNK_SIZE];
 
             while (fileStream.Position != fileStream.Length)
             {
                 bool firstRead = fileStream.Position == 0;
-                var readBytes = fileStream.Read(chunk, 0, chunk.Length);
+                var readBytes = fileStream.Read(chunk, 0, MsgFile.MAX_CHUNK_SIZE);
                 var msgFile = MsgFile.Create(token, fileSize, readBytes, chunk, firstRead);
                 user.Send(msgFile);
-                ArrayPool<byte>.Shared.Return(chunk);
             }
         }
 

@@ -14,11 +14,11 @@ namespace Server.Entities
         public string Password { get; set; }
         public string Email { get; set; }
         public ClientSocket Socket { get; set; }
-        public Dictionary<string,string> Tokens {get;set;}
+        public Dictionary<string, string> Tokens { get; set; }
 
         public User()
         {
-            Tokens=new Dictionary<string, string>();
+            Tokens = new Dictionary<string, string>();
         }
 
         public void OnDisconnect()
@@ -46,7 +46,6 @@ namespace Server.Entities
                 }
             }
         }
-        public string GetIp() => ((IPEndPoint)Socket.Socket.RemoteEndPoint).Address.ToString();
 
         public override string ToString() => $"UserId: {Id} | Name: {Username} | Password: {Password} | Online: {Socket != null && Socket.IsConnected}";
     }

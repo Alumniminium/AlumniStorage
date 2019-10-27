@@ -11,21 +11,20 @@ namespace Universal.Packets
     public unsafe struct MsgBench
     {
         public const int MAX_ARRAY_LENGTH = 100_000;
-        public int Length{get;set;}
-        public bool Compressed{get;set;}
-        public PacketType Id{get;set;}
+        public int Length { get; set; }
+        public bool Compressed { get; set; }
+        public PacketType Id { get; set; }
         public fixed byte Array[MAX_ARRAY_LENGTH];
 
-        public byte[] GetArray()
+        public Span<byte> GetArray()
         {
-            fixed (byte* b = Array)
-                return Unsafe.Read<byte[]>(b);
+            fixed (byte* p = Array)
+                return new Span<byte>(p, MAX_ARRAY_LENGTH);
         }
-
         public void SetArray(byte[] array)
         {
-            fixed (byte* b = Array)
-                Unsafe.Copy(b, ref array);
+            fixed (byte* p = Array)
+                array.AsSpan().CopyTo(new Span<byte>(p, MAX_ARRAY_LENGTH));
         }
 
         public static MsgBench Create(byte[] array, bool compression)
@@ -42,7 +41,7 @@ namespace Universal.Packets
         public static implicit operator byte[](MsgBench msg)
         {
             var buffer = ArrayPool<byte>.Shared.Rent(sizeof(MsgBench));
-            MemoryMarshal.Write<MsgBench>(buffer,ref msg);
+            MemoryMarshal.Write<MsgBench>(buffer, ref msg);
             return buffer;
         }
         public static implicit operator MsgBench(byte[] msg)

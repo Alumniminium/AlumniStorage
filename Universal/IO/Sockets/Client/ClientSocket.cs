@@ -1,29 +1,19 @@
-﻿using Universal.IO.Sockets.Queues;
-using System;
-using System.IO;
-using System.IO.Compression;
+﻿using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using Universal.IO.FastConsole;
-using System.Runtime.InteropServices;
-using Universal.Extensions;
-
+using Universal.IO.Sockets.Pools;
+using Universal.IO.Sockets.Queues;
 namespace Universal.IO.Sockets.Client
 {
     public class ClientSocket
     {
         public Action OnConnected, OnDisconnect;
-
-        public Socket Socket;
+        internal Socket Socket;
         public object StateObject;
         public bool IsConnected;
         public int BufferSize => Buffer.MergeBuffer.Length;
-
         internal readonly NeutralBuffer Buffer;
-        internal readonly AutoResetEvent SendSync = new AutoResetEvent(true);
-        internal readonly SocketAsyncEventArgs ReceiveArgs;
-        internal readonly SocketAsyncEventArgs SendArgs;
 
         public ClientSocket(int bufferSize = 2_000_000, object stateObject = null)
         {
@@ -36,36 +26,20 @@ namespace Universal.IO.Sockets.Client
 
             Buffer = new NeutralBuffer(bufferSize);
             StateObject = stateObject;
-
-            SendArgs = new SocketAsyncEventArgs();
-            SendArgs.UserToken = this;
-            SendArgs.Completed += Sent;
-
-            ReceiveArgs = new SocketAsyncEventArgs();
-            ReceiveArgs.SetBuffer(Buffer.ReceiveBuffer, 0, Buffer.ReceiveBuffer.Length);
-            ReceiveArgs.Completed += Received;
-            ReceiveArgs.UserToken = this;
         }
 
         public void ConnectAsync(string host, ushort port)
         {
-            try
-            {
-                if (IsConnected)
-                    Disconnect("ConnectAsync() IsConnected == true");
+            var endPoint = new IPEndPoint(IPAddress.Parse(host), port);
 
-                var connectArgs = new SocketAsyncEventArgs
-                {
-                    RemoteEndPoint = new IPEndPoint(IPAddress.Parse(host), port)
-                };
-                connectArgs.Completed += Connected;
-                if (!Socket.ConnectAsync(connectArgs))
-                    Connected(null, connectArgs);
-            }
-            catch (Exception e)
-            {
-                Disconnect("ConnectAsync() Catch: " + e.Message + " #### " + e.StackTrace);
-            }
+            if (IsConnected)
+                Disconnect("ConnectAsync() IsConnected == true");
+
+            var connectArgs = SaeaPool.Get();
+            connectArgs.RemoteEndPoint = endPoint;
+            connectArgs.Completed += Connected;
+            if (!Socket.ConnectAsync(connectArgs))
+                Connected(null, connectArgs);
         }
 
         private void Connected(object o, SocketAsyncEventArgs e)
@@ -73,61 +47,70 @@ namespace Universal.IO.Sockets.Client
             if (e.SocketError == SocketError.Success)
             {
                 IsConnected = true;
-                try
-                {
-                    OnConnected?.Invoke();
-                    if (!Socket.ReceiveAsync(ReceiveArgs))
-                        Received(null, ReceiveArgs);
-                }
-                catch (Exception ex)
-                {
-                    Disconnect("ClientSocket.Connected() Catch: " + ex.Message + " #### " + ex.StackTrace);
-                }
+                OnConnected?.Invoke();
+                var receiveArgs = GetReceiveArgs();
+                if (!Socket.ReceiveAsync(receiveArgs))
+                    Received(null, receiveArgs);
             }
             else
                 Disconnect("ClientSocket.Connected() e.SocketError != SocketError.Success");
+
+            e.RemoteEndPoint = null;
+            e.Completed -= Connected;
+            SaeaPool.Return(e);
         }
 
         public void Receive()
         {
-            if (!Socket.ReceiveAsync(ReceiveArgs))
-                Received(null, ReceiveArgs);
+            var e = GetReceiveArgs();
+            if (!Socket.ReceiveAsync(e))
+                Received(null, e);
         }
+
+        internal SocketAsyncEventArgs GetReceiveArgs()
+        {
+            var ReceiveArgs = SaeaPool.Get();
+            ReceiveArgs.SetBuffer(Buffer.ReceiveBuffer, 0, Buffer.ReceiveBuffer.Length);
+            ReceiveArgs.Completed += Received;
+            ReceiveArgs.UserToken = this;
+            return ReceiveArgs;
+        }
+
         public void Received(object sender, SocketAsyncEventArgs e)
         {
-            if (e.SocketError != SocketError.Success || e.BytesTransferred == 0)
-            {
-                Disconnect("ClientSocket.Received() if (e.SocketError != SocketError.Success || e.BytesTransferred == 0)");
-                return;
-            }
-            try
-            {
+            if (e.SocketError == SocketError.Success && e.BytesTransferred > 0)
                 ReceiveQueue.Add(e);
-            }
-            catch (Exception ex)
-            {
-                Disconnect("ClientSocket.Received() Catch: " + ex.Message + " #### " + ex.StackTrace);
-            }
+            else
+                Disconnect("ClientSocket.Received() if (e.SocketError != SocketError.Success || e.BytesTransferred == 0)");
+            e.SetBuffer(null);
+            e.Completed -= Received;
+            e.UserToken = null;
+            SaeaPool.Return(e);
         }
-        public void Send(byte[] packet) => SendQueue.Add(SendArgs, packet);
-
-        private void Sent(object sender, SocketAsyncEventArgs e)
+        public void Send(byte[] packet)
+        {
+            var SendArgs = SaeaPool.Get();
+            SendArgs.UserToken = this;
+            SendArgs.Completed += Sent;
+            SendQueue.Add(SendArgs, packet);
+        }
+        public void Sent(object sender, SocketAsyncEventArgs e)
         {
             if (e.SocketError != SocketError.Success)
                 Disconnect("ClientSocket.Sent() e.SocketError != SocketError.Success");
-            SendSync.Set();
+            //SendSync.Set();
+            e.SetBuffer(null);
+            e.UserToken = null;
+            e.Completed -= Sent;
+            SaeaPool.Return(e);
         }
+        public string GetIp() => ((IPEndPoint)Socket?.RemoteEndPoint)?.Address?.ToString();
+
         public void Disconnect(string reason)
         {
-            try
-            {
-                FConsole.WriteLine("Disconnecting: " + reason);
-                IsConnected = false;
-            }
-            finally
-            {
-                OnDisconnect?.Invoke();
-            }
+            FConsole.WriteLine("Disconnecting: " + reason);
+            IsConnected = false;
+            OnDisconnect?.Invoke();
         }
     }
 }

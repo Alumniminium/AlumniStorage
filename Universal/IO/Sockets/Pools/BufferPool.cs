@@ -1,36 +1,37 @@
-﻿using System.Collections.Concurrent;
+﻿using System.Net.Sockets;
+using System.Collections.Concurrent;
 using Universal.IO.FastConsole;
 
 namespace Universal.IO.Sockets.Pools
 {
-    public class BufferPool
+    public static class SaeaPool
     {
-        public static BufferPool Instance { get; set; } = new BufferPool();
-        private readonly ConcurrentQueue<byte[]> _queue = new ConcurrentQueue<byte[]>();
+        private static ConcurrentQueue<SocketAsyncEventArgs> _queue = new ConcurrentQueue<SocketAsyncEventArgs>();
 
-        public BufferPool()
+        static SaeaPool()
         {
             Fill();
         }
 
-        private void Fill()
+        private static void Fill()
         {
-            for (var i = 0; i < 128; i++)
+            for (var i = 0; i < 1; i++)
             {
-                _queue.Enqueue(new byte[320]);
+                _queue.Enqueue(new SocketAsyncEventArgs());
             }
         }
 
-        public byte[] Get()
+        public static SocketAsyncEventArgs Get()
         {
             if (_queue.IsEmpty)
                 Fill();
-            if (_queue.TryDequeue(out var buffer))
-                return buffer;
+            if (_queue.TryDequeue(out var e))
+                return e;
             FConsole.WriteLine("Fucking queue starved.");
-            return new byte[320];
+
+            return Get();
         }
 
-        public void Return(byte[] buffer) => _queue.Enqueue(buffer);
+        public static void Return(SocketAsyncEventArgs e) => _queue.Enqueue(e);
     }
 }

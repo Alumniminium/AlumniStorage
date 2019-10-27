@@ -1,11 +1,7 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using Universal.IO.FastConsole;
 using Universal.IO.Sockets.Client;
-using Universal.IO.Sockets.Pools;
-using Universal.IO.Sockets.Queues;
 
 namespace Universal.IO.Sockets.Server
 {
@@ -22,7 +18,7 @@ namespace Universal.IO.Sockets.Server
             {
                 NoDelay = true,
                 Blocking = false,
-                UseOnlyOverlappedIO=true
+                UseOnlyOverlappedIO = true
             };
             Socket.Bind(new IPEndPoint(IPAddress.Any, port));
             Socket.Listen(100);
@@ -43,8 +39,9 @@ namespace Universal.IO.Sockets.Server
         private static void Accepted(object sender, SocketAsyncEventArgs e)
         {
             var connection = (ClientSocket)e.UserToken;
-            ((ClientSocket)connection.ReceiveArgs.UserToken).Socket = e.AcceptSocket;
-            connection.Socket.ReceiveAsync(connection.ReceiveArgs);
+            var args = connection.GetReceiveArgs();
+            ((ClientSocket)args.UserToken).Socket = e.AcceptSocket;
+            connection.Socket.ReceiveAsync(args);
             e.AcceptSocket = null;
             e.UserToken = new ClientSocket();
             AcceptSync.Set();

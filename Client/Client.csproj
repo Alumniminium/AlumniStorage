@@ -6,8 +6,8 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <PublishTrimmed>true</PublishTrimmed>
     <PublishSingleFile>True</PublishSingleFile>
-    <PublishReadyToRun>false</PublishReadyToRun>
-    <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
+    <PublishReadyToRun>True</PublishReadyToRun>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
   </PropertyGroup>
 
 

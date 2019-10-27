@@ -1,4 +1,5 @@
 ﻿using System;
+using Server.Entities;
 using Universal.IO.Sockets.Queues;
 using Universal.IO.Sockets.Server;
 

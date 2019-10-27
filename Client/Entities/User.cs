@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Net;
 using Universal.IO.Sockets.Client;
 
 namespace Client.Entities
@@ -12,7 +11,7 @@ namespace Client.Entities
         public string Email { get; set; }
         public ClientSocket Socket { get; set; }
         public string CurrentFileName { get; set; }
-        public ConcurrentDictionary<int,string> Tokens;
+        public ConcurrentDictionary<int, string> Tokens;
 
         public User()
         {
@@ -21,12 +20,10 @@ namespace Client.Entities
 
         public void OnDisconnect()
         {
-            
+
         }
 
         public void Send(byte[] packet) => Socket?.Send(packet);
-        public string GetIp() => ((IPEndPoint)Socket.Socket.RemoteEndPoint).Address.ToString();
-
         public override string ToString() => $"UserId: {Id} | Name: {Username} | Password: {Password} | Online: {Socket != null && Socket.IsConnected}";
     }
 }

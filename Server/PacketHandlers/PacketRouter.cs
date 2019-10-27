@@ -32,6 +32,6 @@ namespace Server
                     Console.WriteLine("Unknown Packet Id " + packetId);
                     break;
             }
-        }        
+        }
     }
 }

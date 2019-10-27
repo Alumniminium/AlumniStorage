@@ -59,10 +59,10 @@ namespace Client
                     case "send":
                         var user = (User)Client.StateObject;
                         Console.WriteLine("Requesting Token...");
-                        user.Send(MsgToken.Create("transcoder", 0,true));
+                        user.Send(MsgToken.Create("transcoder", 0, true));
                         while (!user.Tokens.ContainsKey(0))
                             Thread.Sleep(1);
-                        Console.WriteLine("Uploading... using "+user.Tokens[0]);
+                        Console.WriteLine("Uploading... using " + user.Tokens[0]);
                         PacketRouter.SendFile(user, @"/home/alumni/transcoder", 0);
                         Console.WriteLine("Done.");
                         break;

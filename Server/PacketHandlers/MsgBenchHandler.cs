@@ -10,9 +10,9 @@ namespace Server
         {
             var msgBench = (MsgBench)packet;
             var array = msgBench.GetArray();
-            array.Reverse();
+            //array..Reverse();
 
-            msgBench = MsgBench.Create(array, false);
+            msgBench = MsgBench.Create(new byte[100_000], false);
             user.Send(msgBench);
         }
     }
