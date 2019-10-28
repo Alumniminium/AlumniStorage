@@ -1,6 +1,7 @@
 using Server.Entities;
 using Universal.Packets;
 using System.Linq;
+using System;
 
 namespace Server
 {
@@ -10,7 +11,7 @@ namespace Server
         {
             var msgBench = (MsgBench)packet;
             var array = msgBench.GetArray();
-            //array..Reverse();
+            array.Reverse();
 
             msgBench = MsgBench.Create(new byte[100_000], false);
             user.Send(msgBench);
