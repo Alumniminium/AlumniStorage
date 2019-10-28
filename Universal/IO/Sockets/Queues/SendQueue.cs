@@ -18,8 +18,6 @@ namespace Universal.IO.Sockets.Queues
             {
                 Args = args;
                 Size = BitConverter.ToInt32(packet, 0);
-                //Packet = new byte[Size];
-                //packet.AsSpan().Slice(0, Size).CopyTo(Packet);
                 Packet = packet;
             }
         }
@@ -49,8 +47,6 @@ namespace Universal.IO.Sockets.Queues
                     var connection = (ClientSocket)item.Args.UserToken;
                     var packet = item.Packet;
                     var size = item.Size;
-
-                    //connection.SendSync.WaitOne();
 
                     packet.AsSpan().Slice(0, item.Size).CopyTo(connection.Buffer.SendBuffer);
                     ArrayPool<byte>.Shared.Return(packet);

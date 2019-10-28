@@ -10,14 +10,14 @@ namespace Benchmarks
     [MemoryDiagnoser]
     public unsafe class AllocTests
     {
-        public MsgBench* CachedMsg;
+        public MsgBench CachedMsg;
         public byte[] CachedArray;
 
         [GlobalSetup]
         public void Setup()
         {
             CachedMsg = MsgBench.Create(new byte[100_000], true);
-            CachedArray = MsgBench.ToArray(CachedMsg);
+            CachedArray = CachedMsg;
         }
         [Benchmark]
         public MsgBench ByteToMsgUnsafePointer()

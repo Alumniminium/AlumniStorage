@@ -28,7 +28,7 @@ namespace Server
             {
                 var chunk = msgFile.GetChunk();
                 filestream.Write(chunk);
-
+                Log(path, filestream);
                 if (filestream.Position == msgFile.FileSize)
                 {
                     user.Tokens.Remove(kvp.Key);

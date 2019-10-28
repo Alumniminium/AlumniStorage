@@ -9,6 +9,8 @@ using Universal.IO.Sockets.Queues;
 using Universal.Packets;
 using Universal.Packets.Enums;
 using Client.Entities;
+using Universal.IO.FastConsole;
+using System.Threading.Tasks;
 
 namespace Client
 {
@@ -18,7 +20,7 @@ namespace Client
         public static ushort ServerPort = 65533;
         public static ClientSocket Client = new ClientSocket(500_500);
         public static Stopwatch Stopwatch = new Stopwatch();
-        public static void Main()
+        public static async Task Main()
         {
             ServerHostname = "localhost";
 
@@ -32,7 +34,7 @@ namespace Client
             Client.OnDisconnect += () =>
             {
                 Console.WriteLine("Socket disconnected!");
-                Client = new ClientSocket();
+                Client = new ClientSocket(500_500);
                 Client.ConnectAsync(ipList[0].ToString(), ServerPort);
             };
 
@@ -58,13 +60,13 @@ namespace Client
                         break;
                     case "send":
                         var user = (User)Client.StateObject;
-                        Console.WriteLine("Requesting Token...");
+                        FConsole.WriteLine("Requesting Token...");
                         user.Send(MsgToken.Create("transcoder", 0, true));
                         while (!user.Tokens.ContainsKey(0))
                             Thread.Sleep(1);
-                        Console.WriteLine("Uploading... using " + user.Tokens[0]);
-                        PacketRouter.SendFile(user, @"/home/alumni/transcoder", 0);
-                        Console.WriteLine("Done.");
+                        FConsole.WriteLine("Uploading... using " + user.Tokens[0]);
+                        await user.SendFile(@"/home/alumni/transcoder", 0);
+                        FConsole.WriteLine("Done.");
                         break;
                     default:
                         break;

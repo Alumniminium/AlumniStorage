@@ -6,6 +6,7 @@ using System.Threading.Channels;
 using Universal.IO.Sockets.Client;
 using Universal.IO.Sockets.Pools;
 using Universal.Packets;
+using System.Buffers;
 
 namespace Universal.IO.Sockets.Queues
 {
@@ -46,57 +47,59 @@ namespace Universal.IO.Sockets.Queues
         }
         private static void AssemblePacket(ClientSocket connection, SocketAsyncEventArgs e)
         {
-            while (true)
+            while (connection.Buffer.BytesProcessed != e.BytesTransferred)
             {
                 if (connection.Buffer.BytesInBuffer == 0)
                     StartNewPacket(e, connection);
                 if (connection.Buffer.BytesInBuffer > 0)
                     ReadHeader(e, connection);
 
-                MergeUnsafe(connection, e);
+                Merge(connection, e);
 
                 if (connection.Buffer.BytesInBuffer == connection.Buffer.BytesRequired && connection.Buffer.BytesRequired > 4)
                     FinishPacket(connection);
-                if (connection.Buffer.BytesProcessed != e.BytesTransferred)
-                    continue;
-
-                break;
             }
             connection.Buffer.BytesProcessed = 0;
         }
 
         private static void StartNewPacket(SocketAsyncEventArgs e, ClientSocket connection)
         {
-            var receivedBytes = e.BytesTransferred - connection.Buffer.BytesProcessed;
-            if (receivedBytes >= MIN_HEADER_SIZE)
+            var bytesLeft = e.BytesTransferred - connection.Buffer.BytesProcessed;
+            if (bytesLeft >= MIN_HEADER_SIZE)
                 connection.Buffer.BytesRequired = BitConverter.ToInt32(e.Buffer, connection.Buffer.BytesProcessed);
         }
 
         private static void ReadHeader(SocketAsyncEventArgs e, ClientSocket connection)
         {
             if (connection.Buffer.BytesInBuffer < MIN_HEADER_SIZE)
-                MergeUnsafe(connection, e);
+                Merge(connection, e);
             else
                 connection.Buffer.BytesRequired = BitConverter.ToInt32(connection.Buffer.MergeBuffer, 0);
         }
+        private static unsafe void Merge(ClientSocket connection, SocketAsyncEventArgs e)
+        {
+            var _count = Math.Min(e.BytesTransferred - connection.Buffer.BytesProcessed, connection.Buffer.BytesRequired - connection.Buffer.BytesInBuffer);
+            var _destOffset = connection.Buffer.BytesInBuffer;
+            var _recOffset = connection.Buffer.BytesProcessed;
+            var sourceSlice = e.Buffer.AsSpan().Slice(_recOffset, _count);
+            var destinationSlice = connection.Buffer.MergeBuffer.AsSpan().Slice(_destOffset);
 
+            sourceSlice.CopyTo(destinationSlice);
+
+            connection.Buffer.BytesInBuffer += _count;
+            connection.Buffer.BytesProcessed += _count;
+        }
         private static void FinishPacket(ClientSocket connection)
         {
             if (connection.Buffer.MergeBuffer[COMPRESSION_FLAG_OFFSET] == 1)
                 connection.Buffer.Decompress();
 
+            var packet = ArrayPool<byte>.Shared.Rent(connection.Buffer.BytesRequired);
+            connection.Buffer.MergeBuffer.AsSpan().Slice(0, connection.Buffer.BytesRequired).CopyTo(packet);
             OnPacket?.Invoke(connection, connection.Buffer.MergeBuffer);
-            connection.Buffer.BytesInBuffer = 0;
-        }
-        private static unsafe void MergeUnsafe(ClientSocket connection, SocketAsyncEventArgs e)
-        {
-            var _count = e.BytesTransferred - connection.Buffer.BytesProcessed;
-            var _destOffset = connection.Buffer.BytesInBuffer;
-            var _recOffset = connection.Buffer.BytesProcessed;
+            ArrayPool<byte>.Shared.Return(packet);
 
-            e.Buffer.AsSpan().Slice(_recOffset, _count).CopyTo(connection.Buffer.MergeBuffer.AsSpan().Slice(_destOffset));
-            connection.Buffer.BytesInBuffer += _count;
-            connection.Buffer.BytesProcessed += _count;
+            connection.Buffer.BytesInBuffer = 0;
         }
     }
 }

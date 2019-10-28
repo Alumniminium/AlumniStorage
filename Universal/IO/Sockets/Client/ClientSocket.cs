@@ -1,4 +1,5 @@
-﻿using System;
+﻿using System.Buffers;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using Universal.IO.FastConsole;
@@ -15,7 +16,7 @@ namespace Universal.IO.Sockets.Client
         public int BufferSize => Buffer.MergeBuffer.Length;
         internal readonly NeutralBuffer Buffer;
 
-        public ClientSocket(int bufferSize = 2_000_000, object stateObject = null)
+        public ClientSocket(int bufferSize, object stateObject = null)
         {
             Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
             {
@@ -35,12 +36,11 @@ namespace Universal.IO.Sockets.Client
             if (IsConnected)
                 Disconnect("ConnectAsync() IsConnected == true");
 
-            var connectArgs = SaeaPool.Get();
-            //connectArgs.UserToken = new ClientSocket();
+            var connectArgs = GetSaea();
             connectArgs.RemoteEndPoint = endPoint;
-            connectArgs.Completed += Connected;
+
             if (!Socket.ConnectAsync(connectArgs))
-                Connected(null, connectArgs);
+                Completed(null, connectArgs);
         }
 
         private void Connected(object o, SocketAsyncEventArgs e)
@@ -49,7 +49,7 @@ namespace Universal.IO.Sockets.Client
             {
                 IsConnected = true;
                 OnConnected?.Invoke();
-                var receiveArgs = GetReceiveArgs();
+                var receiveArgs = GetSaea();
                 if (!Socket.ReceiveAsync(receiveArgs))
                     Received(null, receiveArgs);
             }
@@ -57,32 +57,30 @@ namespace Universal.IO.Sockets.Client
                 Disconnect("ClientSocket.Connected() e.SocketError != SocketError.Success");
 
             e.RemoteEndPoint = null;
-            e.Completed -= Connected;
-            SaeaPool.Return(e);
-        }
-
-        internal void RecycleArgs(SocketAsyncEventArgs e)
-        {
-            e.SetBuffer(null);
-            e.Completed -= Received;
-            e.UserToken = null;
             SaeaPool.Return(e);
         }
 
         public void Receive()
         {
-            var e = GetReceiveArgs();
+            var e = GetSaea();
             if (!Socket.ReceiveAsync(e))
                 Received(null, e);
         }
 
-        internal SocketAsyncEventArgs GetReceiveArgs()
+        private void Completed(object sender, SocketAsyncEventArgs e)
         {
-            var ReceiveArgs = SaeaPool.Get();
-            ReceiveArgs.SetBuffer(Buffer.ReceiveBuffer, 0, Buffer.ReceiveBuffer.Length);
-            ReceiveArgs.Completed += Received;
-            ReceiveArgs.UserToken = this;
-            return ReceiveArgs;
+            switch (e.LastOperation)
+            {
+                case SocketAsyncOperation.Receive:
+                    Received(sender, e);
+                    break;
+                case SocketAsyncOperation.Send:
+                    Sent(sender, e);
+                    break;
+                case SocketAsyncOperation.Connect:
+                    Connected(sender, e);
+                    break;
+            }
         }
 
         public void Received(object sender, SocketAsyncEventArgs e)
@@ -96,17 +94,35 @@ namespace Universal.IO.Sockets.Client
         {
             var SendArgs = SaeaPool.Get();
             SendArgs.UserToken = this;
-            SendArgs.Completed += Sent;
-            SendQueue.Add(SendArgs, packet);
+
+            var size = BitConverter.ToInt32(packet, 0);
+            var copy = ArrayPool<byte>.Shared.Rent(size);
+            packet.AsSpan().CopyTo(copy);
+
+            SendQueue.Add(SendArgs, copy);
         }
         public void Sent(object sender, SocketAsyncEventArgs e)
         {
             if (e.SocketError != SocketError.Success)
                 Disconnect("ClientSocket.Sent() e.SocketError != SocketError.Success");
-            //SendSync.Set();
+
             e.SetBuffer(null);
             e.UserToken = null;
-            e.Completed -= Sent;
+            SaeaPool.Return(e);
+        }
+        internal SocketAsyncEventArgs GetSaea()
+        {
+            var e = SaeaPool.Get();
+            e.SetBuffer(Buffer.ReceiveBuffer, 0, Buffer.ReceiveBuffer.Length);
+            e.Completed += Completed;
+            e.UserToken = this;
+            return e;
+        }
+        internal void RecycleArgs(SocketAsyncEventArgs e)
+        {
+            e.SetBuffer(null);
+            e.Completed -= Completed;
+            e.UserToken = null;
             SaeaPool.Return(e);
         }
         public string GetIp() => ((IPEndPoint)Socket?.RemoteEndPoint)?.Address?.ToString();

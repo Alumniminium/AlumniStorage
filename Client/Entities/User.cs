@@ -1,5 +1,8 @@
 using System.Collections.Concurrent;
+using System.IO;
+using System.Threading.Tasks;
 using Universal.IO.Sockets.Client;
+using Universal.Packets;
 
 namespace Client.Entities
 {
@@ -10,7 +13,6 @@ namespace Client.Entities
         public string Password { get; set; }
         public string Email { get; set; }
         public ClientSocket Socket { get; set; }
-        public string CurrentFileName { get; set; }
         public ConcurrentDictionary<int, string> Tokens;
 
         public User()
@@ -24,6 +26,25 @@ namespace Client.Entities
         }
 
         public void Send(byte[] packet) => Socket?.Send(packet);
+        public async ValueTask SendFile(string path, int tokenId)
+        {
+            string token = Tokens[tokenId];
+            using (var fileStream = File.Open(path, FileMode.Open, FileAccess.Read))
+            {
+                var fileSize = fileStream.Length;
+                var chunk = new byte[MsgFile.MAX_CHUNK_SIZE];
+
+                while (fileStream.Position != fileStream.Length)
+                {
+                    bool firstRead = fileStream.Position == 0;
+                    var readBytes = await fileStream.ReadAsync(chunk, 0, MsgFile.MAX_CHUNK_SIZE);
+                    var msgFile = MsgFile.Create(token, fileSize, readBytes, chunk, firstRead);
+                    Send(msgFile);
+                }
+            }
+
+            Tokens.TryRemove(tokenId, out _);
+        }
         public override string ToString() => $"UserId: {Id} | Name: {Username} | Password: {Password} | Online: {Socket != null && Socket.IsConnected}";
     }
 }

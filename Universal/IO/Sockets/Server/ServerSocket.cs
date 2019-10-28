@@ -11,9 +11,11 @@ namespace Universal.IO.Sockets.Server
         internal static Socket Socket;
         internal static SocketAsyncEventArgs AcceptArgs;
         internal static readonly AutoResetEvent AcceptSync = new AutoResetEvent(true);
-
+        public static int BufferSize { get; internal set; }
         public static void Start(ushort port, int bufferSize = 500_500)
         {
+            BufferSize = bufferSize;
+
             Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
             {
                 NoDelay = true,
@@ -39,11 +41,11 @@ namespace Universal.IO.Sockets.Server
         private static void Accepted(object sender, SocketAsyncEventArgs e)
         {
             var connection = (ClientSocket)e.UserToken;
-            var args = connection.GetReceiveArgs();
+            var args = connection.GetSaea();
             ((ClientSocket)args.UserToken).Socket = e.AcceptSocket;
             connection.Socket.ReceiveAsync(args);
             e.AcceptSocket = null;
-            e.UserToken = new ClientSocket();
+            e.UserToken = new ClientSocket(BufferSize);
             AcceptSync.Set();
             StartAccepting();
         }
