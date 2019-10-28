@@ -2,12 +2,11 @@ using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Universal.Extensions;
 using Universal.Packets.Enums;
 
 namespace Universal.Packets
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe struct MsgBench
     {
         public const int MAX_ARRAY_LENGTH = 100_000;
