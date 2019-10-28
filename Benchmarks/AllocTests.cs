@@ -10,14 +10,14 @@ namespace Benchmarks
     [MemoryDiagnoser]
     public unsafe class AllocTests
     {
-        public MsgBench CachedMsg;
+        public MsgBench* CachedMsg;
         public byte[] CachedArray;
 
         [GlobalSetup]
         public void Setup()
         {
             CachedMsg = MsgBench.Create(new byte[100_000], true);
-            CachedArray = CachedMsg;
+            CachedArray = MsgBench.ToArray(CachedMsg);
         }
         [Benchmark]
         public MsgBench ByteToMsgUnsafePointer()
@@ -40,32 +40,6 @@ namespace Benchmarks
         public MsgBench MemoryMarshal_Read()
         {
             return MemoryMarshal.Read<MsgBench>(CachedArray); ;
-        }
-        [Benchmark]
-        public MsgBench MemoryMarshal_TryRead()
-        {
-            MemoryMarshal.TryRead(CachedArray, out CachedMsg);
-            return CachedArray;
-        }
-        public byte[] MemoryMarshal_TryWrite()
-        {
-            MemoryMarshal.TryWrite(CachedArray, ref CachedMsg);
-            return CachedArray;
-        }
-
-        public byte[] Cast_Safe_Write()
-        {
-            MemoryMarshal.Write(CachedArray, ref CachedMsg);
-            return CachedArray;
-        }
-
-        public byte[] Cast_Unsafe_Pointer()
-        {
-            var cachedMsg = CachedMsg;
-            fixed (byte* p = CachedArray)
-                *(MsgBench*)p = *&cachedMsg;
-
-            return CachedArray;
         }
     }
 }

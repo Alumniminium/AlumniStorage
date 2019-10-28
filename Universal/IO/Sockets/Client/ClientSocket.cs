@@ -36,6 +36,7 @@ namespace Universal.IO.Sockets.Client
                 Disconnect("ConnectAsync() IsConnected == true");
 
             var connectArgs = SaeaPool.Get();
+            //connectArgs.UserToken = new ClientSocket();
             connectArgs.RemoteEndPoint = endPoint;
             connectArgs.Completed += Connected;
             if (!Socket.ConnectAsync(connectArgs))
@@ -57,6 +58,14 @@ namespace Universal.IO.Sockets.Client
 
             e.RemoteEndPoint = null;
             e.Completed -= Connected;
+            SaeaPool.Return(e);
+        }
+
+        internal void RecycleArgs(SocketAsyncEventArgs e)
+        {
+            e.SetBuffer(null);
+            e.Completed -= Received;
+            e.UserToken = null;
             SaeaPool.Return(e);
         }
 
@@ -82,10 +91,6 @@ namespace Universal.IO.Sockets.Client
                 ReceiveQueue.Add(e);
             else
                 Disconnect("ClientSocket.Received() if (e.SocketError != SocketError.Success || e.BytesTransferred == 0)");
-            e.SetBuffer(null);
-            e.Completed -= Received;
-            e.UserToken = null;
-            SaeaPool.Return(e);
         }
         public void Send(byte[] packet)
         {

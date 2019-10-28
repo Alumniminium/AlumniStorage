@@ -18,8 +18,9 @@ namespace Universal.IO.Sockets.Queues
             {
                 Args = args;
                 Size = BitConverter.ToInt32(packet, 0);
-                Packet = new byte[Size];
-                packet.AsSpan().Slice(0, Size).CopyTo(Packet);
+                //Packet = new byte[Size];
+                //packet.AsSpan().Slice(0, Size).CopyTo(Packet);
+                Packet = packet;
             }
         }
         private static Thread _workerThread;
@@ -52,7 +53,7 @@ namespace Universal.IO.Sockets.Queues
                     //connection.SendSync.WaitOne();
 
                     packet.AsSpan().Slice(0, item.Size).CopyTo(connection.Buffer.SendBuffer);
-                    //ArrayPool<byte>.Shared.Return(packet);
+                    ArrayPool<byte>.Shared.Return(packet);
 
                     if (connection.Buffer.SendBuffer[COMPRESSION_FLAG_OFFSET] == 1)
                         size = connection.Buffer.Compress(size);

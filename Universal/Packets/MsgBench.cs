@@ -38,6 +38,10 @@ namespace Universal.Packets
             ptr->SetArray(array);
             return *ptr;
         }
+        public static byte[] ToArray(MsgBench* ptr)
+        {
+            return Unsafe.ReadUnaligned<byte[]>(ptr);
+        }
         public static implicit operator byte[](MsgBench msg)
         {
             var buffer = ArrayPool<byte>.Shared.Rent(sizeof(MsgBench));
