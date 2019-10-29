@@ -22,7 +22,7 @@ namespace Universal.Packets
         public void SetArray(byte[] array)
         {
             fixed (byte* p = Array)
-                array.AsSpan().CopyTo(new Span<byte>(p, MAX_ARRAY_LENGTH));
+                array.AsSpan().CopyTo(new Span<byte>(p, Math.Min(MAX_ARRAY_LENGTH, array.Length)));
         }
 
         public static MsgBench Create(byte[] array, bool compression)
