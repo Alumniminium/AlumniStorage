@@ -20,11 +20,11 @@ namespace Client
         public static Stopwatch Stopwatch = new Stopwatch();
         public static async Task Main()
         {
-            ServerHostname = "localhost";
+            FConsole.WriteLine("Host: ");
+            ServerHostname = Console.ReadLine().Trim();
             Client.OnConnected += Connected;
             ReceiveQueue.OnPacket += PacketRouter.Handle;
             Client.OnDisconnect += Disconnected;
-            Thread.Sleep(1000);
             Client.ConnectAsync(ServerHostname, ServerPort);
 
             while (true)
@@ -64,7 +64,7 @@ namespace Client
         private static void Disconnected()
         {
             Thread.Sleep(1000);
-            Console.WriteLine("Socket disconnected!");
+            FConsole.WriteLine("Socket disconnected!");
             Client = new ClientSocket(500_500);
             Client.OnConnected += Connected;
             Client.OnDisconnect += Disconnected;
@@ -73,7 +73,8 @@ namespace Client
 
         private static void Connected()
         {
-            Console.WriteLine("Socket Connected!");
+            FConsole.WriteLine("Socket Connected! Logging in...");
+            Client.Send(MsgLogin.Create("asd", "asdasd", false, MsgLoginType.Login));
         }
     }
 }

@@ -18,7 +18,7 @@ namespace Universal.IO.Sockets.Client
         public int BufferSize => Buffer.MergeBuffer.Length;
         internal readonly NeutralBuffer Buffer;
 
-        public AutoResetEvent SendSync = new AutoResetEvent(true);
+        public Semaphore SendSync = new Semaphore(1, 4);
 
         public ClientSocket(int bufferSize, object stateObject = null)
         {
@@ -111,7 +111,7 @@ namespace Universal.IO.Sockets.Client
             e.Completed -= Completed;
             e.UserToken = null;
             SaeaPool.Return(e);
-            SendSync.Set();
+            SendSync.Release();
         }
 
         public string GetIp() => ((IPEndPoint)Socket?.RemoteEndPoint)?.Address?.ToString();
