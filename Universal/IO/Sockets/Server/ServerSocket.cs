@@ -36,13 +36,13 @@ namespace Universal.IO.Sockets.Server
 
         private static void Accepted(object sender, SocketAsyncEventArgs e)
         {
-            e.UserToken = new ClientSocket(BufferSize);
-            ((ClientSocket)e.UserToken).Socket = e.AcceptSocket;
-            ((ClientSocket)e.UserToken).Receive();
+            var receiveArgs = SaeaPool.Get();
+            receiveArgs.UserToken = new ClientSocket(BufferSize);
+            ((ClientSocket)receiveArgs.UserToken).Socket = e.AcceptSocket;
+            ((ClientSocket)receiveArgs.UserToken).IsConnected = true;
+            ((ClientSocket)receiveArgs.UserToken).Receive();
 
-            e.AcceptSocket = null;
             e.Completed -= Accepted;
-            e.UserToken = null;
             SaeaPool.Return(e);
             StartAccepting();
         }
