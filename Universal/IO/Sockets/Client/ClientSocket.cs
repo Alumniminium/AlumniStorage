@@ -1,4 +1,5 @@
-﻿using System;
+﻿using System.Threading;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using Universal.IO.FastConsole;
@@ -16,6 +17,8 @@ namespace Universal.IO.Sockets.Client
         public bool IsConnected;
         public int BufferSize => Buffer.MergeBuffer.Length;
         internal readonly NeutralBuffer Buffer;
+
+        public AutoResetEvent SendSync = new AutoResetEvent(true);
 
         public ClientSocket(int bufferSize, object stateObject = null)
         {
@@ -72,6 +75,7 @@ namespace Universal.IO.Sockets.Client
         }
         public void Send(byte[] packet)
         {
+            SendSync.WaitOne();
             var e = SaeaPool.Get();
             e.UserToken = this;
             e.Completed += Completed;
@@ -103,16 +107,11 @@ namespace Universal.IO.Sockets.Client
 
         private void SendCompleted(SocketAsyncEventArgs e)
         {
-            if (e.BytesTransferred != e.Count)
-            {
-                FConsole.WriteLine($"e.BytesTransferred {e.BytesTransferred} == e.Count {e.Count}");
-            }
-
-
             e.SetBuffer(null);
             e.Completed -= Completed;
             e.UserToken = null;
             SaeaPool.Return(e);
+            SendSync.Set();
         }
 
         public string GetIp() => ((IPEndPoint)Socket?.RemoteEndPoint)?.Address?.ToString();

@@ -13,7 +13,7 @@ namespace Server.PacketHandlers
             var array = msgBench.GetArray();
             array.Reverse();
 
-            msgBench = MsgBench.Create(new byte[100_000], false);
+            msgBench = MsgBench.Create(new byte[100], false);
             user.Send(msgBench);
         }
     }
