@@ -75,7 +75,6 @@ namespace Universal.IO.Sockets.Client
         }
         public void Send(byte[] packet)
         {
-            SendSync.WaitOne();
             var e = SaeaPool.Get();
             e.UserToken = this;
             e.Completed += Completed;

@@ -43,6 +43,8 @@ namespace Universal.IO.Sockets.Queues
                         size = connection.Buffer.Compress(size);
 
                     item.Args.SetBuffer(connection.Buffer.SendBuffer, 0, size);
+
+                    connection.SendSync.WaitOne();
                     if (!connection.Socket.SendAsync(item.Args))
                         connection.Completed(null, item.Args);
                 }
