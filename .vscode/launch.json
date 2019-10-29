@@ -37,5 +37,14 @@
             "console": "integratedTerminal",
             "stopAtEntry": false
         }
+    ],
+    "compounds": [
+        {
+            "name": "Server/Client",
+            "configurations": [
+                "Launch Server",
+                "Launch Client"
+            ]
+        }
     ]
 }

@@ -56,7 +56,7 @@ namespace Universal.IO.Sockets.Queues
 
                     item.Args.SetBuffer(connection.Buffer.SendBuffer, 0, size);
                     if (!connection.Socket.SendAsync(item.Args))
-                        connection.Sent(null, item.Args);
+                        connection.Completed(null, item.Args);
                 }
             }
         }

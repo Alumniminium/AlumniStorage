@@ -49,10 +49,5 @@ namespace Universal.IO.Sockets.Server
             AcceptSync.Set();
             StartAccepting();
         }
-        private static void CloseClientSocket(SocketAsyncEventArgs e)
-        {
-            var token = (ClientSocket)e.UserToken;
-            token?.Socket?.Dispose();
-        }
     }
 }

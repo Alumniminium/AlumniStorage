@@ -23,25 +23,12 @@ namespace Client
         public static async Task Main()
         {
             ServerHostname = "localhost";
-
-            var ipList = Dns.GetHostAddresses(ServerHostname).Where(i => i.AddressFamily == AddressFamily.InterNetwork).ToArray();
-            foreach (var ip in ipList)
-                Console.WriteLine(ip.ToString());
-
-            Client.OnConnected += () => Console.WriteLine("Socket Connected!");
+            Client.OnConnected += Connected;
             ReceiveQueue.OnPacket += PacketRouter.Handle;
-
-            Client.OnDisconnect += () =>
-            {
-                Console.WriteLine("Socket disconnected!");
-                Client = new ClientSocket(500_500);
-                Client.ConnectAsync(ipList[0].ToString(), ServerPort);
-            };
-
+            Client.OnDisconnect += Disconnected;
             Thread.Sleep(1000);
-            Client.ConnectAsync(ipList[0].ToString(), ServerPort);
+            Client.ConnectAsync(ServerHostname, ServerPort);
 
-            Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
             while (true)
             {
                 var msg = Console.ReadLine();
@@ -72,6 +59,22 @@ namespace Client
                         break;
                 }
             }
+        }
+
+        private static void Disconnected()
+        {
+            Thread.Sleep(1000);
+            Console.WriteLine("Socket disconnected!");
+            Client = new ClientSocket(500_500);
+            Client.OnConnected += Connected;
+            Client.OnDisconnect += Disconnected;
+            Client.ConnectAsync(ServerHostname, ServerPort);
+        }
+
+        private static void Connected()
+        {
+            Console.WriteLine("Socket Connected!");
+            Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
         }
     }
 }

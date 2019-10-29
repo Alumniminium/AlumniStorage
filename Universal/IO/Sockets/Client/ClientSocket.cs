@@ -5,6 +5,8 @@ using System.Net.Sockets;
 using Universal.IO.FastConsole;
 using Universal.IO.Sockets.Pools;
 using Universal.IO.Sockets.Queues;
+using System.Linq;
+
 namespace Universal.IO.Sockets.Client
 {
     public class ClientSocket
@@ -31,11 +33,13 @@ namespace Universal.IO.Sockets.Client
 
         public void ConnectAsync(string host, ushort port)
         {
-            var endPoint = new IPEndPoint(IPAddress.Parse(host), port);
+            var ipList = Dns.GetHostAddresses(host).Where(i => i.AddressFamily == AddressFamily.InterNetwork).ToArray();
+            var endPoint = new IPEndPoint(ipList.First(), port);
 
             if (IsConnected)
                 Disconnect("ConnectAsync() IsConnected == true");
 
+            FConsole.WriteLine($"Connecting to {host} at {ipList.First()} on port {port}");
             var connectArgs = GetSaea();
             connectArgs.RemoteEndPoint = endPoint;
 
@@ -51,23 +55,25 @@ namespace Universal.IO.Sockets.Client
                 OnConnected?.Invoke();
                 var receiveArgs = GetSaea();
                 if (!Socket.ReceiveAsync(receiveArgs))
-                    Received(null, receiveArgs);
+                    Completed(null, receiveArgs);
             }
             else
                 Disconnect("ClientSocket.Connected() e.SocketError != SocketError.Success");
 
-            e.RemoteEndPoint = null;
-            SaeaPool.Return(e);
+            RecycleArgs(e);
         }
 
         public void Receive()
         {
             var e = GetSaea();
+            e.UserToken = this;
+            e.Completed += Completed;
+
             if (!Socket.ReceiveAsync(e))
-                Received(null, e);
+                Completed(null, e);
         }
 
-        private void Completed(object sender, SocketAsyncEventArgs e)
+        internal void Completed(object sender, SocketAsyncEventArgs e)
         {
             switch (e.LastOperation)
             {
@@ -92,23 +98,18 @@ namespace Universal.IO.Sockets.Client
         }
         public void Send(byte[] packet)
         {
-            var SendArgs = SaeaPool.Get();
-            SendArgs.UserToken = this;
-
-            var size = BitConverter.ToInt32(packet, 0);
-            var copy = ArrayPool<byte>.Shared.Rent(size);
-            packet.AsSpan().CopyTo(copy);
-
-            SendQueue.Add(SendArgs, copy);
+            var e = SaeaPool.Get();
+            e.UserToken = this;
+            e.Completed += Completed;
+            SendQueue.Add(e, packet);
         }
         public void Sent(object sender, SocketAsyncEventArgs e)
         {
             if (e.SocketError != SocketError.Success)
                 Disconnect("ClientSocket.Sent() e.SocketError != SocketError.Success");
-
-            e.SetBuffer(null);
-            e.UserToken = null;
-            SaeaPool.Return(e);
+            //if (e.BytesTransferred != BitConverter.ToInt32(e.Buffer, 0))
+            //    Socket.SendAsync(e);
+            RecycleArgs(e);
         }
         internal SocketAsyncEventArgs GetSaea()
         {
@@ -123,6 +124,7 @@ namespace Universal.IO.Sockets.Client
             e.SetBuffer(null);
             e.Completed -= Completed;
             e.UserToken = null;
+            e.RemoteEndPoint = null;
             SaeaPool.Return(e);
         }
         public string GetIp() => ((IPEndPoint)Socket?.RemoteEndPoint)?.Address?.ToString();

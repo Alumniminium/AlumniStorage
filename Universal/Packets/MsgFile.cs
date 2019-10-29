@@ -41,9 +41,7 @@ namespace Universal.Packets
         public void SetChunk(byte[] chunk)
         {
             fixed (byte* p = Chunk)
-            {
                 Unsafe.WriteUnaligned(p, chunk);
-            }
         }
 
         public static MsgFile Create(string token, long size, int chunkSize, byte[] chunk, bool create)

@@ -1,6 +1,5 @@
 using System;
 using System.Buffers;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Universal.Packets.Enums;
 
@@ -36,10 +35,6 @@ namespace Universal.Packets
 
             ptr->SetArray(array);
             return *ptr;
-        }
-        public static byte[] ToArray(MsgBench* ptr)
-        {
-            return Unsafe.ReadUnaligned<byte[]>(ptr);
         }
         public static implicit operator byte[](MsgBench msg)
         {
