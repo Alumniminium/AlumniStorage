@@ -19,7 +19,7 @@ namespace Universal.IO.Sockets.Queues
 
         static ReceiveQueue()
         {
-            var channel = Channel.CreateUnbounded<SocketAsyncEventArgs>(new UnboundedChannelOptions() { SingleReader = true, AllowSynchronousContinuations = true,SingleWriter = true});
+            var channel = Channel.CreateUnbounded<SocketAsyncEventArgs>(new UnboundedChannelOptions() { SingleReader = true, AllowSynchronousContinuations = true, SingleWriter = true });
             Reader = channel.Reader;
             Writer = channel.Writer;
             WorkerThread = new Thread(WorkLoop)
@@ -44,6 +44,8 @@ namespace Universal.IO.Sockets.Queues
                     e.SetBuffer(null);
                     e.UserToken = null;
                     SaeaPool.Return(e);
+
+                    clientSocket.Receive();
                 }
             }
         }
@@ -102,7 +104,7 @@ namespace Universal.IO.Sockets.Queues
 
             var packet = ArrayPool<byte>.Shared.Rent(connection.Buffer.BytesRequired);
             connection.Buffer.MergeBuffer.AsSpan().Slice(0, connection.Buffer.BytesRequired).CopyTo(packet);
-            OnPacket?.Invoke(connection, connection.Buffer.MergeBuffer);
+            OnPacket?.Invoke(connection, packet);
             ArrayPool<byte>.Shared.Return(packet);
 
             connection.Buffer.BytesInBuffer = 0;

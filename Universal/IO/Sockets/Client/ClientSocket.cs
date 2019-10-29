@@ -43,19 +43,32 @@ namespace Universal.IO.Sockets.Client
             connectArgs.Completed += Completed;
             connectArgs.RemoteEndPoint = endPoint;
 
-            if (!Socket.ConnectAsync(connectArgs))
-                Completed(null, connectArgs);
+            try
+            {
+                if (!Socket.ConnectAsync(connectArgs))
+                    Completed(null, connectArgs);
+            }
+            catch (Exception ex)
+            {
+                Disconnect($"ConnectAsync() if (!Socket.ConnectAsync(connectArgs)) -> {ex.Message} {ex.StackTrace}");
+            }
         }
 
         public void Receive()
         {
             var e = SaeaPool.Get();
-            e.SetBuffer(Buffer.ReceiveBuffer,0,Buffer.ReceiveBuffer.Length);
+            e.SetBuffer(Buffer.ReceiveBuffer, 0, Buffer.ReceiveBuffer.Length);
             e.UserToken = this;
             e.Completed += Completed;
-
-            if (!Socket.ReceiveAsync(e))
-                Completed(null, e);
+            try
+            {
+                if (!Socket.ReceiveAsync(e))
+                    Completed(null, e);
+            }
+            catch (Exception ex)
+            {
+                Disconnect($"Receive() if (!Socket.ReceiveAsync(e)) -> {ex.Message} {ex.StackTrace}");
+            }
         }
         public void Send(byte[] packet)
         {
@@ -78,10 +91,7 @@ namespace Universal.IO.Sockets.Client
                     ReceiveQueue.Add(e);
                     break;
                 case SocketAsyncOperation.Send:
-                    e.SetBuffer(null);
-                    e.Completed -= Completed;
-                    e.UserToken = null;
-                    SaeaPool.Return(e);
+                    SendCompleted(e);
                     break;
                 case SocketAsyncOperation.Connect:
                     IsConnected = true;
@@ -90,14 +100,29 @@ namespace Universal.IO.Sockets.Client
                     break;
             }
         }
+
+        private void SendCompleted(SocketAsyncEventArgs e)
+        {
+            if (e.BytesTransferred != e.Count)
+            {
+                FConsole.WriteLine($"e.BytesTransferred {e.BytesTransferred} == e.Count {e.Count}");
+            }
+
+
+            e.SetBuffer(null);
+            e.Completed -= Completed;
+            e.UserToken = null;
+            SaeaPool.Return(e);
+        }
+
         public string GetIp() => ((IPEndPoint)Socket?.RemoteEndPoint)?.Address?.ToString();
 
         public void Disconnect(string reason)
         {
             FConsole.WriteLine("Disconnecting: " + reason);
             IsConnected = false;
-            OnDisconnect?.Invoke();
             Socket.Dispose();
+            OnDisconnect?.Invoke();
         }
     }
 }

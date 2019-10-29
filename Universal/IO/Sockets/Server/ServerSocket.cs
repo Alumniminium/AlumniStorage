@@ -43,6 +43,7 @@ namespace Universal.IO.Sockets.Server
             ((ClientSocket)receiveArgs.UserToken).Receive();
 
             e.Completed -= Accepted;
+            e.AcceptSocket = null;
             SaeaPool.Return(e);
             StartAccepting();
         }

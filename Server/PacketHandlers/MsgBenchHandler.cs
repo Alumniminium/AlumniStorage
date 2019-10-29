@@ -1,12 +1,13 @@
 using System;
 using Server.Entities;
+using Universal.IO.Sockets.Client;
 using Universal.Packets;
 
 namespace Server.PacketHandlers
 {
     internal static class MsgBenchHandler
     {
-        public static void Process(User user, byte[] packet)
+        public static void Process(ClientSocket user, byte[] packet)
         {
             var msgBench = (MsgBench)packet;
             var array = msgBench.GetArray();

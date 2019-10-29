@@ -23,7 +23,7 @@ namespace Server.PacketHandlers
                     MsgTokenHandler.Process(user, packet);
                     break;
                 case PacketType.MsgBench:
-                    MsgBenchHandler.Process(user, packet);
+                    MsgBenchHandler.Process(clientSocket, packet);
                     break;
                 default:
                     Console.WriteLine("Unknown Packet Id " + packetId);

@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build server",
-            "program": "${workspaceFolder}/Server/bin/Debug/netcoreapp3.0/linux-x64/Server.dll",
+            "program": "${workspaceFolder}/Server/bin/Debug/netcoreapp3.0/Server.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Server",
             "console": "integratedTerminal",
@@ -20,7 +20,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build benchmark",
-            "program": "${workspaceFolder}/Benchmarks/bin/Debug/netcoreapp3.0/linux-x64/Benchmarks.dll",
+            "program": "${workspaceFolder}/Benchmarks/bin/Debug/netcoreapp3.0/Benchmarks.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Benchmarks",
             "console": "integratedTerminal",
@@ -31,7 +31,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build client",
-            "program": "${workspaceFolder}/Client/bin/Debug/netcoreapp3.0/linux-x64/Client.dll",
+            "program": "${workspaceFolder}/Client/bin/Debug/netcoreapp3.0/Client.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Client",
             "console": "integratedTerminal",
@@ -76,12 +76,15 @@
             "name": "Server/Client",
             "configurations": [
                 "uLaunch Server",
-                "uLaunch Client"]
-            },
-            {
+                "uLaunch Client"
+            ]
+        },
+        {
             "name": "wServer/Client",
             "configurations": [
                 "wLaunch Server",
-                "wLaunch Client"]
-            }]
+                "wLaunch Client"
+            ]
         }
+    ]
+}
