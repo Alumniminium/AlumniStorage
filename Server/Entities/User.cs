@@ -1,7 +1,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using Universal.IO.Sockets.Client;
 using Universal.Packets;
 
@@ -38,7 +37,7 @@ namespace Server.Entities
 
                 while (fileStream.Position != fileStream.Length)
                 {
-                    bool firstRead = fileStream.Position == 0;
+                    var firstRead = fileStream.Position == 0;
                     var readBytes = fileStream.Read(chunk, 0, chunk.Length);
                     var msgFile = MsgFile.Create(fileName, fileSize, readBytes, chunk, firstRead);
                     Send(msgFile);

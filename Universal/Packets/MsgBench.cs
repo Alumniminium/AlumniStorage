@@ -27,7 +27,7 @@ namespace Universal.Packets
 
         public static MsgBench Create(byte[] array, bool compression)
         {
-            MsgBench* ptr = stackalloc MsgBench[1];
+            var ptr = stackalloc MsgBench[1];
 
             ptr->Length = sizeof(MsgBench);
             ptr->Compressed = compression;
@@ -39,7 +39,7 @@ namespace Universal.Packets
         public static implicit operator byte[](MsgBench msg)
         {
             var buffer = ArrayPool<byte>.Shared.Rent(sizeof(MsgBench));
-            MemoryMarshal.Write<MsgBench>(buffer, ref msg);
+            MemoryMarshal.Write(buffer, ref msg);
             return buffer;
         }
         public static implicit operator MsgBench(byte[] msg)

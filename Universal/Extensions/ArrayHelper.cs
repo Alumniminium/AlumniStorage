@@ -9,7 +9,7 @@ namespace Universal.Extensions
         {
             if (sourceArray.Length <= 76)
             {
-                for (int i = 0; i < sourceArray.Length; i++)
+                for (var i = 0; i < sourceArray.Length; i++)
                 {
                     sourceArray[i] = default(T);
                 }

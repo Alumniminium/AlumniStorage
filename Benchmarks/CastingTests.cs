@@ -9,9 +9,9 @@ namespace Benchmarks
     [MemoryDiagnoser]
     public unsafe class CastingTests
     {
-        public unsafe MsgLogin Allocate_Stackalloc()
+        public MsgLogin Allocate_Stackalloc()
         {
-            MsgLogin* ptr = stackalloc MsgLogin[1];
+            var ptr = stackalloc MsgLogin[1];
             ptr->Length = sizeof(MsgLogin);
             ptr->Id = PacketType.MsgLogin;
             ptr->Compressed = true;
@@ -32,10 +32,12 @@ namespace Benchmarks
         } 
         public MsgLogin Allocate_New()
         {
-            MsgLogin ptr = new MsgLogin();
-            ptr.Id = PacketType.MsgLogin;
-            ptr.Length = sizeof(MsgLogin);
-            ptr.Compressed = true;
+            var ptr = new MsgLogin
+            {
+                Id = PacketType.MsgLogin, 
+                Length = sizeof(MsgLogin), 
+                Compressed = true
+            };
             ptr.SetUsername("user");
             ptr.SetPassword("pass");
             return ptr;

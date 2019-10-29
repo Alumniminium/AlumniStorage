@@ -2,9 +2,9 @@ using System;
 using System.Buffers;
 using Universal.Extensions;
 
-namespace Universal.IO
+namespace Universal.IO.Sockets
 {
-    public static class QuickLZ
+    public static class QuickLz
     {
         private const int HASH_VALUES = 4096;
         private const int MINOFFSET = 2;
@@ -15,94 +15,90 @@ namespace Universal.IO
         private const int QLZ_POINTERS_1 = 1;
         private const int QLZ_POINTERS_3 = 16;
 
-        private static int headerLen(Span<byte> source)
+        private static int HeaderLen(Span<byte> source)
         {
             return ((source[0] & 2) == 2) ? 9 : 3;
         }
 
-        public static int sizeDecompressed(Span<byte> source)
+        public static int SizeDecompressed(Span<byte> source)
         {
-            if (headerLen(source) == 9)
+            if (HeaderLen(source) == 9)
                 return source[5] | (source[6] << 8) | (source[7] << 16) | (source[8] << 24);
             else
                 return source[2];
         }
 
-        public static int sizeCompressed(Span<byte> source)
+        public static int SizeCompressed(Span<byte> source)
         {
-            if (headerLen(source) == 9)
+            if (HeaderLen(source) == 9)
                 return source[1] | (source[2] << 8) | (source[3] << 16) | (source[4] << 24);
             else
                 return source[1];
         }
 
-        private static void write_header(byte[] dst, int level, bool compressible, int size_compressed, int size_decompressed)
+        private static void Write_header(byte[] dst, int level, bool compressible, int sizeCompressed, int sizeDecompressed)
         {
             dst[0] = (byte)(2 | (compressible ? 1 : 0));
             dst[0] |= (byte)(level << 2);
             dst[0] |= (1 << 6);
             dst[0] |= (0 << 4);
-            fast_write(dst, 1, size_decompressed, 4);
-            fast_write(dst, 5, size_compressed, 4);
+            fast_write(dst, 1, sizeDecompressed, 4);
+            fast_write(dst, 5, sizeCompressed, 4);
         }
 
-        public static byte[] compress(byte[] source, int size, int level, byte[] destination)
+        public static byte[] Compress(byte[] source, int size, int level, byte[] destination)
         {
-            int src = 0;
-            int dst = DEFAULT_HEADERLEN + CWORD_LEN;
-            uint cword_val = 0x80000000;
-            int cword_ptr = DEFAULT_HEADERLEN;
-            int[,] hashtable;
-            int[] cachetable = new int[HASH_VALUES];
-            byte[] hash_counter = new byte[HASH_VALUES];
+            var src = 0;
+            var dst = DEFAULT_HEADERLEN + CWORD_LEN;
+            var cwordVal = 0x80000000;
+            var cwordPtr = DEFAULT_HEADERLEN;
+            var cachetable = new int[HASH_VALUES];
+            var hashCounter = new byte[HASH_VALUES];
             byte[] d2;
-            int fetch = 0;
-            int last_matchstart = (size - UNCONDITIONAL_MATCHLEN - UNCOMPRESSED_END - 1);
-            int lits = 0;
+            var fetch = 0;
+            var lastMatchstart = (size - UNCONDITIONAL_MATCHLEN - UNCOMPRESSED_END - 1);
+            var lits = 0;
 
-            if (level == 1)
-                hashtable = new int[HASH_VALUES, QLZ_POINTERS_1];
-            else
-                hashtable = new int[HASH_VALUES, QLZ_POINTERS_3];
+            var hashtable = level == 1 ? new int[HASH_VALUES, QLZ_POINTERS_1] : new int[HASH_VALUES, QLZ_POINTERS_3];
 
             if (size == 0)
                 return new byte[0];
 
-            if (src <= last_matchstart)
+            if (src <= lastMatchstart)
                 fetch = source[src] | (source[src + 1] << 8) | (source[src + 2] << 16);
 
-            while (src <= last_matchstart)
+            while (src <= lastMatchstart)
             {
-                if ((cword_val & 1) == 1)
+                if ((cwordVal & 1) == 1)
                 {
                     if (src > size >> 1 && dst > src - (src >> 5))
                     {
                         d2 = new byte[size + DEFAULT_HEADERLEN];
-                        write_header(d2, level, false, size, size + DEFAULT_HEADERLEN);
+                        Write_header(d2, level, false, size, size + DEFAULT_HEADERLEN);
                         Buffer.BlockCopy(source, 0, d2, DEFAULT_HEADERLEN, size);
                         return d2;
                     }
 
-                    fast_write(destination, cword_ptr, (int)((cword_val >> 1) | 0x80000000), 4);
-                    cword_ptr = dst;
+                    fast_write(destination, cwordPtr, (int)((cwordVal >> 1) | 0x80000000), 4);
+                    cwordPtr = dst;
                     dst += CWORD_LEN;
-                    cword_val = 0x80000000;
+                    cwordVal = 0x80000000;
                 }
 
                 if (level == 1)
                 {
-                    int hash = ((fetch >> 12) ^ fetch) & (HASH_VALUES - 1);
-                    int o = hashtable[hash, 0];
-                    int cache = cachetable[hash] ^ fetch;
+                    var hash = ((fetch >> 12) ^ fetch) & (HASH_VALUES - 1);
+                    var o = hashtable[hash, 0];
+                    var cache = cachetable[hash] ^ fetch;
                     cachetable[hash] = fetch;
                     hashtable[hash, 0] = src;
 
-                    if (cache == 0 && hash_counter[hash] != 0 && (src - o > MINOFFSET || (src == o + 1 && lits >= 3 && src > 3 && source[src] == source[src - 3] && source[src] == source[src - 2] && source[src] == source[src - 1] && source[src] == source[src + 1] && source[src] == source[src + 2])))
+                    if (cache == 0 && hashCounter[hash] != 0 && (src - o > MINOFFSET || (src == o + 1 && lits >= 3 && src > 3 && source[src] == source[src - 3] && source[src] == source[src - 2] && source[src] == source[src - 1] && source[src] == source[src + 1] && source[src] == source[src + 2])))
                     {
-                        cword_val = ((cword_val >> 1) | 0x80000000);
+                        cwordVal = ((cwordVal >> 1) | 0x80000000);
                         if (source[o + 3] != source[src + 3])
                         {
-                            int f = 3 - 2 | (hash << 4);
+                            var f = 3 - 2 | (hash << 4);
                             destination[dst + 0] = (byte)(f >> 0 * 8);
                             destination[dst + 1] = (byte)(f >> 1 * 8);
                             src += 3;
@@ -110,27 +106,27 @@ namespace Universal.IO
                         }
                         else
                         {
-                            int old_src = src;
-                            int remaining = ((size - UNCOMPRESSED_END - src + 1 - 1) > 255 ? 255 : (size - UNCOMPRESSED_END - src + 1 - 1));
+                            var oldSrc = src;
+                            var remaining = ((size - UNCOMPRESSED_END - src + 1 - 1) > 255 ? 255 : (size - UNCOMPRESSED_END - src + 1 - 1));
 
                             src += 4;
-                            if (source[o + src - old_src] == source[src])
+                            if (source[o + src - oldSrc] == source[src])
                             {
                                 src++;
-                                if (source[o + src - old_src] == source[src])
+                                if (source[o + src - oldSrc] == source[src])
                                 {
                                     src++;
-                                    while (source[o + (src - old_src)] == source[src] && (src - old_src) < remaining)
+                                    while (source[o + (src - oldSrc)] == source[src] && (src - oldSrc) < remaining)
                                         src++;
                                 }
                             }
 
-                            int matchlen = src - old_src;
+                            var matchlen = src - oldSrc;
 
                             hash <<= 4;
                             if (matchlen < 18)
                             {
-                                int f = (hash | (matchlen - 2));
+                                var f = (hash | (matchlen - 2));
                                 destination[dst + 0] = (byte)(f >> 0 * 8);
                                 destination[dst + 1] = (byte)(f >> 1 * 8);
                                 dst += 2;
@@ -147,9 +143,9 @@ namespace Universal.IO
                     else
                     {
                         lits++;
-                        hash_counter[hash] = 1;
+                        hashCounter[hash] = 1;
                         destination[dst] = source[src];
-                        cword_val = (cword_val >> 1);
+                        cwordVal = (cwordVal >> 1);
                         src++;
                         dst++;
                         fetch = ((fetch >> 8) & 0xffff) | (source[src + 2] << 16);
@@ -160,50 +156,47 @@ namespace Universal.IO
                 {
                     fetch = source[src] | (source[src + 1] << 8) | (source[src + 2] << 16);
 
-                    int o, offset2;
-                    int matchlen, k, m, best_k = 0;
-                    byte c;
-                    int remaining = ((size - UNCOMPRESSED_END - src + 1 - 1) > 255 ? 255 : (size - UNCOMPRESSED_END - src + 1 - 1));
-                    int hash = ((fetch >> 12) ^ fetch) & (HASH_VALUES - 1);
+                    int o;
+                    int k;
+                    var remaining = ((size - UNCOMPRESSED_END - src + 1 - 1) > 255 ? 255 : (size - UNCOMPRESSED_END - src + 1 - 1));
+                    var hash = ((fetch >> 12) ^ fetch) & (HASH_VALUES - 1);
 
-                    c = hash_counter[hash];
-                    matchlen = 0;
-                    offset2 = 0;
+                    var c = hashCounter[hash];
+                    var matchlen = 0;
+                    var offset2 = 0;
                     for (k = 0; k < QLZ_POINTERS_3 && c > k; k++)
                     {
                         o = hashtable[hash, k];
-                        if ((byte)fetch == source[o] && (byte)(fetch >> 8) == source[o + 1] && (byte)(fetch >> 16) == source[o + 2] && o < src - MINOFFSET)
+                        if ((byte) fetch != source[o] || (byte) (fetch >> 8) != source[o + 1] || (byte) (fetch >> 16) != source[o + 2] || o >= src - MINOFFSET)
+                            continue;
+                        var m = 3;
+                        while (source[o + m] == source[src + m] && m < remaining)
+                            m++;
+                        if ((m > matchlen) || (m == matchlen && o > offset2))
                         {
-                            m = 3;
-                            while (source[o + m] == source[src + m] && m < remaining)
-                                m++;
-                            if ((m > matchlen) || (m == matchlen && o > offset2))
-                            {
-                                offset2 = o;
-                                matchlen = m;
-                                best_k = k;
-                            }
+                            offset2 = o;
+                            matchlen = m;
                         }
                     }
                     o = offset2;
                     hashtable[hash, c & (QLZ_POINTERS_3 - 1)] = src;
                     c++;
-                    hash_counter[hash] = c;
+                    hashCounter[hash] = c;
 
                     if (matchlen >= 3 && src - o < 131071)
                     {
-                        int offset = src - o;
+                        var offset = src - o;
 
-                        for (int u = 1; u < matchlen; u++)
+                        for (var u = 1; u < matchlen; u++)
                         {
                             fetch = source[src + u] | (source[src + u + 1] << 8) | (source[src + u + 2] << 16);
                             hash = ((fetch >> 12) ^ fetch) & (HASH_VALUES - 1);
-                            c = hash_counter[hash]++;
+                            c = hashCounter[hash]++;
                             hashtable[hash, c & (QLZ_POINTERS_3 - 1)] = src + u;
                         }
 
                         src += matchlen;
-                        cword_val = ((cword_val >> 1) | 0x80000000);
+                        cwordVal = ((cwordVal >> 1) | 0x80000000);
 
                         if (matchlen == 3 && offset <= 63)
                         {
@@ -235,7 +228,7 @@ namespace Universal.IO
                     else
                     {
                         destination[dst] = source[src];
-                        cword_val = (cword_val >> 1);
+                        cwordVal = (cwordVal >> 1);
                         src++;
                         dst++;
                     }
@@ -243,25 +236,25 @@ namespace Universal.IO
             }
             while (src <= size - 1)
             {
-                if ((cword_val & 1) == 1)
+                if ((cwordVal & 1) == 1)
                 {
-                    fast_write(destination, cword_ptr, (int)((cword_val >> 1) | 0x80000000), 4);
-                    cword_ptr = dst;
+                    fast_write(destination, cwordPtr, (int)((cwordVal >> 1) | 0x80000000), 4);
+                    cwordPtr = dst;
                     dst += CWORD_LEN;
-                    cword_val = 0x80000000;
+                    cwordVal = 0x80000000;
                 }
 
                 destination[dst] = source[src];
                 src++;
                 dst++;
-                cword_val = (cword_val >> 1);
+                cwordVal = (cwordVal >> 1);
             }
-            while ((cword_val & 1) != 1)
+            while ((cwordVal & 1) != 1)
             {
-                cword_val = (cword_val >> 1);
+                cwordVal = (cwordVal >> 1);
             }
-            fast_write(destination, cword_ptr, (int)((cword_val >> 1) | 0x80000000), CWORD_LEN);
-            write_header(destination, level, true, size, dst);
+            fast_write(destination, cwordPtr, (int)((cwordVal >> 1) | 0x80000000), CWORD_LEN);
+            Write_header(destination, level, true, size, dst);
             d2 = ArrayPool<byte>.Shared.Rent(dst).SelfSetToDefaults();
             Buffer.BlockCopy(destination, 0, d2, 0, dst);
             ArrayPool<byte>.Shared.Return(destination);
@@ -271,43 +264,41 @@ namespace Universal.IO
 
         private static void fast_write(byte[] a, int i, int value, int numbytes)
         {
-            for (int j = 0; j < numbytes; j++)
+            for (var j = 0; j < numbytes; j++)
                 a[i + j] = (byte)(value >> (j * 8));
         }
 
-        public static byte[] decompress(Span<byte> source)
+        public static byte[] Decompress(Span<byte> source)
         {
-            int level;
-            int size = sizeDecompressed(source);
-            int src = headerLen(source);
-            int dst = 0;
-            uint cword_val = 1;
-            byte[] destination = new byte[size];
-            int[] hashtable = new int[4096];
-            byte[] hash_counter = new byte[4096];
-            int last_matchstart = size - UNCONDITIONAL_MATCHLEN - UNCOMPRESSED_END - 1;
-            int last_hashed = -1;
-            int hash;
+            var size = SizeDecompressed(source);
+            var src = HeaderLen(source);
+            var dst = 0;
+            uint cwordVal = 1;
+            var destination = new byte[size];
+            var hashtable = new int[4096];
+            var hashCounter = new byte[4096];
+            var lastMatchstart = size - UNCONDITIONAL_MATCHLEN - UNCOMPRESSED_END - 1;
+            var lastHashed = -1;
             uint fetch = 0;
 
-            level = (source[0] >> 2) & 0x3;
+            var level = (source[0] >> 2) & 0x3;
 
             if ((source[0] & 1) != 1)
             {
-                var hl = headerLen(source);
-                byte[] d2 = new byte[size];
-                for (int i = 0; i < size; i++)
+                var hl = HeaderLen(source);
+                var d2 = new byte[size];
+                for (var i = 0; i < size; i++)
                     d2[i] = source[hl + i];
                 return d2;
             }
 
             for (; ; )
             {
-                if (cword_val == 1)
+                if (cwordVal == 1)
                 {
-                    cword_val = (uint)(source[src] | (source[src + 1] << 8) | (source[src + 2] << 16) | (source[src + 3] << 24));
+                    cwordVal = (uint)(source[src] | (source[src + 1] << 8) | (source[src + 2] << 16) | (source[src + 3] << 24));
                     src += 4;
-                    if (dst <= last_matchstart)
+                    if (dst <= lastMatchstart)
                     {
                         if (level == 1)
                             fetch = (uint)(source[src] | (source[src + 1] << 8) | (source[src + 2] << 16));
@@ -316,12 +307,13 @@ namespace Universal.IO
                     }
                 }
 
-                if ((cword_val & 1) == 1)
+                int hash;
+                if ((cwordVal & 1) == 1)
                 {
                     uint matchlen;
                     uint offset2;
 
-                    cword_val = cword_val >> 1;
+                    cwordVal = cwordVal >> 1;
 
                     if (level == 1)
                     {
@@ -379,7 +371,7 @@ namespace Universal.IO
                     destination[dst + 1] = destination[offset2 + 1];
                     destination[dst + 2] = destination[offset2 + 2];
 
-                    for (int i = 3; i < matchlen; i += 1)
+                    for (var i = 3; i < matchlen; i += 1)
                     {
                         destination[dst + i] = destination[offset2 + i];
                     }
@@ -388,14 +380,14 @@ namespace Universal.IO
 
                     if (level == 1)
                     {
-                        fetch = (uint)(destination[last_hashed + 1] | (destination[last_hashed + 2] << 8) | (destination[last_hashed + 3] << 16));
-                        while (last_hashed < dst - matchlen)
+                        fetch = (uint)(destination[lastHashed + 1] | (destination[lastHashed + 2] << 8) | (destination[lastHashed + 3] << 16));
+                        while (lastHashed < dst - matchlen)
                         {
-                            last_hashed++;
+                            lastHashed++;
                             hash = (int)(((fetch >> 12) ^ fetch) & (HASH_VALUES - 1));
-                            hashtable[hash] = last_hashed;
-                            hash_counter[hash] = 1;
-                            fetch = (uint)(fetch >> 8 & 0xffff | destination[last_hashed + 3] << 16);
+                            hashtable[hash] = lastHashed;
+                            hashCounter[hash] = 1;
+                            fetch = (uint)(fetch >> 8 & 0xffff | destination[lastHashed + 3] << 16);
                         }
                         fetch = (uint)(source[src] | (source[src + 1] << 8) | (source[src + 2] << 16));
                     }
@@ -403,26 +395,26 @@ namespace Universal.IO
                     {
                         fetch = (uint)(source[src] | (source[src + 1] << 8) | (source[src + 2] << 16) | (source[src + 3] << 24));
                     }
-                    last_hashed = dst - 1;
+                    lastHashed = dst - 1;
                 }
                 else
                 {
-                    if (dst <= last_matchstart)
+                    if (dst <= lastMatchstart)
                     {
                         destination[dst] = source[src];
                         dst += 1;
                         src += 1;
-                        cword_val = cword_val >> 1;
+                        cwordVal = cwordVal >> 1;
 
                         if (level == 1)
                         {
-                            while (last_hashed < dst - 3)
+                            while (lastHashed < dst - 3)
                             {
-                                last_hashed++;
-                                int fetch2 = destination[last_hashed] | (destination[last_hashed + 1] << 8) | (destination[last_hashed + 2] << 16);
+                                lastHashed++;
+                                var fetch2 = destination[lastHashed] | (destination[lastHashed + 1] << 8) | (destination[lastHashed + 2] << 16);
                                 hash = ((fetch2 >> 12) ^ fetch2) & (HASH_VALUES - 1);
-                                hashtable[hash] = last_hashed;
-                                hash_counter[hash] = 1;
+                                hashtable[hash] = lastHashed;
+                                hashCounter[hash] = 1;
                             }
                             fetch = (uint)(fetch >> 8 & 0xffff | source[src + 2] << 16);
                         }
@@ -435,16 +427,16 @@ namespace Universal.IO
                     {
                         while (dst <= size - 1)
                         {
-                            if (cword_val == 1)
+                            if (cwordVal == 1)
                             {
                                 src += CWORD_LEN;
-                                cword_val = 0x80000000;
+                                cwordVal = 0x80000000;
                             }
 
                             destination[dst] = source[src];
                             dst++;
                             src++;
-                            cword_val = cword_val >> 1;
+                            cwordVal >>= 1;
                         }
                         return destination;
                     }

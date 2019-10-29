@@ -1,28 +1,27 @@
 using System;
-using Server.Entities;
+using Client.Entities;
 using Universal.IO.Sockets.Client;
-using Universal.Packets.Enums;
 
-namespace Server.PacketHandlers
+namespace Client.Packethandlers
 {
     public static class PacketRouter
     {
         public static void Handle(ClientSocket clientSocket, byte[] packet)
         {
-            var packetId = (PacketType)packet[5];
+            var packetId = packet[5];
             var user = (User)clientSocket.StateObject;
             switch (packetId)
             {
-                case PacketType.MsgLogin:
+                case 1:
                     MsgLoginHandler.Process(clientSocket, packet);
                     break;
-                case PacketType.MsgFile:
+                case 2:
                     MsgFileHandler.Process(user, packet);
                     break;
-                case PacketType.MsgToken:
+                case 3:
                     MsgTokenHandler.Process(user, packet);
                     break;
-                case PacketType.MsgBench:
+                case 10:
                     MsgBenchHandler.Process(user, packet);
                     break;
                 default:

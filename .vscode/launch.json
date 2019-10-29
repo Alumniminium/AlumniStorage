@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Server",
+            "name": "uLaunch Server",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build server",
@@ -16,7 +16,7 @@
             "stopAtEntry": false
         },
         {
-            "name": "Launch Benchmark",
+            "name": "uLaunch Benchmark",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build benchmark",
@@ -27,11 +27,44 @@
             "stopAtEntry": false
         },
         {
-            "name": "Launch Client",
+            "name": "uLaunch Client",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build client",
             "program": "${workspaceFolder}/Client/bin/Debug/netcoreapp3.0/linux-x64/Client.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/Client",
+            "console": "integratedTerminal",
+            "stopAtEntry": false
+        },
+        {
+            "name": "wLaunch Server",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build server",
+            "program": "${workspaceFolder}/Server/bin/Debug/netcoreapp3.0/Server.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/Server",
+            "console": "integratedTerminal",
+            "stopAtEntry": false
+        },
+        {
+            "name": "wLaunch Benchmark",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build benchmark",
+            "program": "${workspaceFolder}/Benchmarks/bin/Debug/netcoreapp3.0/Benchmarks.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/Benchmarks",
+            "console": "integratedTerminal",
+            "stopAtEntry": false
+        },
+        {
+            "name": "wLaunch Client",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build client",
+            "program": "${workspaceFolder}/Client/bin/Debug/netcoreapp3.0/Client.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Client",
             "console": "integratedTerminal",
@@ -42,9 +75,13 @@
         {
             "name": "Server/Client",
             "configurations": [
-                "Launch Server",
-                "Launch Client"
-            ]
+                "uLaunch Server",
+                "uLaunch Client"]
+            },
+            {
+            "name": "wServer/Client",
+            "configurations": [
+                "wLaunch Server",
+                "wLaunch Client"]
+            }]
         }
-    ]
-}

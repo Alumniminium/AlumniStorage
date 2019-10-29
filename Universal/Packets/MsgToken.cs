@@ -33,7 +33,7 @@ namespace Universal.Packets
 
         public static MsgToken Create(string token, int uniqueId, bool compression)
         {
-            MsgToken* ptr = stackalloc MsgToken[1];
+            var ptr = stackalloc MsgToken[1];
             ptr->Length = sizeof(MsgToken);
             ptr->Compressed = compression;
             ptr->Id = PacketType.MsgToken;
@@ -45,7 +45,7 @@ namespace Universal.Packets
         public static implicit operator byte[](MsgToken msg)
         {
             var buffer = ArrayPool<byte>.Shared.Rent(sizeof(MsgToken));
-            MemoryMarshal.Write<MsgToken>(buffer, ref msg);
+            MemoryMarshal.Write(buffer, ref msg);
             return buffer;
         }
         public static implicit operator MsgToken(byte[] msg)

@@ -1,8 +1,5 @@
 ﻿using System.Diagnostics;
 using System;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using Universal.IO.Sockets.Client;
 using Universal.IO.Sockets.Queues;
@@ -11,6 +8,7 @@ using Universal.Packets.Enums;
 using Client.Entities;
 using Universal.IO.FastConsole;
 using System.Threading.Tasks;
+using Client.Packethandlers;
 
 namespace Client
 {
@@ -35,10 +33,13 @@ namespace Client
 
                 switch (msg)
                 {
+                    case "login":
+                        Client.Send(MsgLogin.Create("asd", "asdasd", false, MsgLoginType.Login));
+                        break;
                     case "ping":
-                        byte[] array = new byte[100_000];
+                        var array = new byte[100_000];
                         var random = new Random();
-                        for (int i = 0; i < array.Length; i++)
+                        for (var i = 0; i < array.Length; i++)
                         {
                             array[i] = (byte)random.Next(0, 255);
                         }
@@ -48,14 +49,12 @@ namespace Client
                     case "send":
                         var user = (User)Client.StateObject;
                         FConsole.WriteLine("Requesting Token...");
-                        user.Send(MsgToken.Create("transcoder", 0, true));
+                        user.Send(MsgToken.Create("transcoder", 0, false));
                         while (!user.Tokens.ContainsKey(0))
                             Thread.Sleep(1);
                         FConsole.WriteLine("Uploading... using " + user.Tokens[0]);
                         await user.SendFile(@"/home/alumni/transcoder", 0);
                         FConsole.WriteLine("Done.");
-                        break;
-                    default:
                         break;
                 }
             }
@@ -74,7 +73,6 @@ namespace Client
         private static void Connected()
         {
             Console.WriteLine("Socket Connected!");
-            Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
         }
     }
 }

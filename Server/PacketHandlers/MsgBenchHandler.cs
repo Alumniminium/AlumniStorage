@@ -1,12 +1,10 @@
-using System.Runtime.Intrinsics;
+using System;
 using Server.Entities;
 using Universal.Packets;
-using System.Linq;
-using System;
 
-namespace Server
+namespace Server.PacketHandlers
 {
-    internal class MsgBenchHandler
+    internal static class MsgBenchHandler
     {
         public static void Process(User user, byte[] packet)
         {

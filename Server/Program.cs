@@ -1,13 +1,13 @@
 ﻿using System;
-using Server.Entities;
+using Server.PacketHandlers;
 using Universal.IO.Sockets.Queues;
 using Universal.IO.Sockets.Server;
 
 namespace Server
 {
-    class Program
+    internal static class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             Console.WriteLine("Hello World!");
             ReceiveQueue.OnPacket += PacketRouter.Handle;

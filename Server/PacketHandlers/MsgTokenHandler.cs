@@ -3,7 +3,7 @@ using Server.Entities;
 using Universal.IO.FastConsole;
 using Universal.Packets;
 
-namespace Server
+namespace Server.PacketHandlers
 {
     internal class MsgTokenHandler
     {
@@ -12,7 +12,7 @@ namespace Server
             var msgToken = (MsgToken)packet;
             var path = msgToken.GetToken;
 
-            var token = "";
+            string token;
             if (!user.Tokens.ContainsKey(path))
             {
                 token = Guid.NewGuid().ToString().Replace("-", "");

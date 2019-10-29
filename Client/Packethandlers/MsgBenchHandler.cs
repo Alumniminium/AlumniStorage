@@ -1,17 +1,19 @@
-using Client;
 using Client.Entities;
 using Universal.IO.FastConsole;
 using Universal.Packets;
 
-public class MsgBenchHandler
+namespace Client.Packethandlers
 {
-    
-    public static void Process(User user, MsgBench packet)
+    public class MsgBenchHandler
     {
-        Program.Stopwatch.Stop();
-        FConsole.WriteLine("Took: " + Program.Stopwatch.Elapsed.TotalMilliseconds);
-        Program.Stopwatch.Restart();
-        Program.Client.Send(MsgBench.Create(new byte[100_000], false));
-    }
+    
+        public static void Process(User user, MsgBench packet)
+        {
+            Program.Stopwatch.Stop();
+            FConsole.WriteLine("Took: " + Program.Stopwatch.Elapsed.TotalMilliseconds);
+            Program.Stopwatch.Restart();
+            Program.Client.Send(MsgBench.Create(new byte[100_000], false));
+        }
 
+    }
 }

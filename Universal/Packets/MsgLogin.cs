@@ -1,5 +1,4 @@
-﻿using System;
-using System.Buffers;
+﻿using System.Buffers;
 using System.Runtime.InteropServices;
 using Universal.Extensions;
 using Universal.Packets.Enums;
@@ -46,7 +45,7 @@ namespace Universal.Packets
         }
         public static MsgLogin Create(string user, string pass, bool compression, MsgLoginType type)
         {
-            MsgLogin* ptr = stackalloc MsgLogin[1];
+            var ptr = stackalloc MsgLogin[1];
             ptr->Length = sizeof(MsgLogin);
             ptr->Compressed = compression;
             ptr->Id = PacketType.MsgLogin;
@@ -59,7 +58,7 @@ namespace Universal.Packets
         public static implicit operator byte[](MsgLogin msg)
         {
             var buffer = ArrayPool<byte>.Shared.Rent(sizeof(MsgLogin));
-            MemoryMarshal.Write<MsgLogin>(buffer,ref msg);
+            MemoryMarshal.Write(buffer,ref msg);
             return buffer;
         }
         public static implicit operator MsgLogin(byte[] msg)

@@ -1,14 +1,9 @@
-using System.Linq;
 using System.Buffers;
 using System;
-using System.IO;
-using System.IO.Compression;
-using Universal.Extensions;
-using Universal.Packets;
 
 namespace Universal.IO.Sockets
 {
-    public unsafe class NeutralBuffer
+    public class NeutralBuffer
     {
         internal readonly byte[] ReceiveBuffer;
         internal byte[] SendBuffer;
@@ -26,7 +21,7 @@ namespace Universal.IO.Sockets
         internal void Decompress()
         {
             var chunk = MergeBuffer.AsSpan().Slice(6, BytesRequired - 6);
-            var decompressed = QuickLZ.decompress(chunk);
+            var decompressed = QuickLz.Decompress(chunk);
             var sizeBytes = BitConverter.GetBytes(decompressed.Length + 6);
             sizeBytes.AsSpan().CopyTo(MergeBuffer);
             decompressed.AsSpan().CopyTo(MergeBuffer.AsSpan().Slice(6));
@@ -35,7 +30,7 @@ namespace Universal.IO.Sockets
         internal int Compress(int size)
         {
             var buffer=ArrayPool<byte>.Shared.Rent(400 + size - 6);
-            var compressedChunk = QuickLZ.compress(SendBuffer.AsSpan(6, size - 6).ToArray(), size - 6, 3, buffer);
+            var compressedChunk = QuickLz.Compress(SendBuffer.AsSpan(6, size - 6).ToArray(), size - 6, 3, buffer);
             var compressedSize = compressedChunk.Length;
             var sizeBytes = BitConverter.GetBytes(compressedSize + 6);
 

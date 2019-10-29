@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BenchmarkDotNet.Attributes;
@@ -39,7 +38,7 @@ namespace Benchmarks
         [Benchmark]
         public MsgBench MemoryMarshal_Read()
         {
-            return MemoryMarshal.Read<MsgBench>(CachedArray); ;
+            return MemoryMarshal.Read<MsgBench>(CachedArray);
         }
     }
 }

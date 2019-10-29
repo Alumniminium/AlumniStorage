@@ -4,41 +4,46 @@ using System.Threading;
 using System.Threading.Channels;
 using Universal.IO.Sockets.Client;
 using System.Buffers;
+using Universal.IO.Sockets.Pools;
 
 namespace Universal.IO.Sockets.Queues
 {
     public static class ReceiveQueue
     {
-        private static Thread _workerThread;
-        private unsafe static int MIN_HEADER_SIZE = 4;
-        private static int COMPRESSION_FLAG_OFFSET = 4;
+        private static readonly Thread WorkerThread;
+        private const int MIN_HEADER_SIZE = 4;
+        private const int COMPRESSION_FLAG_OFFSET = 4;
         public static Action<ClientSocket, byte[]> OnPacket;
-        private static ChannelWriter<SocketAsyncEventArgs> _writer;
-        private static ChannelReader<SocketAsyncEventArgs> _reader;
+        private static readonly ChannelWriter<SocketAsyncEventArgs> Writer;
+        private static readonly ChannelReader<SocketAsyncEventArgs> Reader;
 
         static ReceiveQueue()
         {
-            var channel = Channel.CreateUnbounded<SocketAsyncEventArgs>(new UnboundedChannelOptions() { SingleReader = true });
-            _reader = channel.Reader;
-            _writer = channel.Writer;
-            _workerThread = new Thread(WorkLoop)
+            var channel = Channel.CreateUnbounded<SocketAsyncEventArgs>(new UnboundedChannelOptions() { SingleReader = true, AllowSynchronousContinuations = true,SingleWriter = true});
+            Reader = channel.Reader;
+            Writer = channel.Writer;
+            WorkerThread = new Thread(WorkLoop)
             {
                 IsBackground = true,
                 Priority = ThreadPriority.Highest
             };
-            _workerThread.Start();
+            WorkerThread.Start();
         }
-        public static void Add(SocketAsyncEventArgs e) => _writer.TryWrite(e);
+        public static void Add(SocketAsyncEventArgs e) => Writer.TryWrite(e);
         public static async void WorkLoop()
         {
-            while (await _reader.WaitToReadAsync())
+            while (await Reader.WaitToReadAsync())
             {
-                while (_reader.TryRead(out var e))
+                while (Reader.TryRead(out var e))
                 {
                     var clientSocket = (ClientSocket)e.UserToken;
                     AssemblePacket(clientSocket, e);
-                    clientSocket.RecycleArgs(e);
-                    clientSocket.Receive();
+
+                    if (clientSocket != null)
+                        e.Completed -= clientSocket.Completed;
+                    e.SetBuffer(null);
+                    e.UserToken = null;
+                    SaeaPool.Return(e);
                 }
             }
         }
@@ -55,6 +60,10 @@ namespace Universal.IO.Sockets.Queues
 
                 if (connection.Buffer.BytesInBuffer == connection.Buffer.BytesRequired && connection.Buffer.BytesRequired > 4)
                     FinishPacket(connection);
+
+
+                if (connection.Buffer.BytesProcessed == 0)
+                    break;
             }
             connection.Buffer.BytesProcessed = 0;
         }
@@ -73,18 +82,18 @@ namespace Universal.IO.Sockets.Queues
             else
                 connection.Buffer.BytesRequired = BitConverter.ToInt32(connection.Buffer.MergeBuffer, 0);
         }
-        private static unsafe void Merge(ClientSocket connection, SocketAsyncEventArgs e)
+        private static void Merge(ClientSocket connection, SocketAsyncEventArgs e)
         {
-            var _count = Math.Min(e.BytesTransferred - connection.Buffer.BytesProcessed, connection.Buffer.BytesRequired - connection.Buffer.BytesInBuffer);
-            var _destOffset = connection.Buffer.BytesInBuffer;
-            var _recOffset = connection.Buffer.BytesProcessed;
-            var sourceSlice = e.Buffer.AsSpan().Slice(_recOffset, _count);
-            var destinationSlice = connection.Buffer.MergeBuffer.AsSpan().Slice(_destOffset);
+            var count = Math.Min(e.BytesTransferred - connection.Buffer.BytesProcessed, connection.Buffer.BytesRequired - connection.Buffer.BytesInBuffer);
+            var destOffset = connection.Buffer.BytesInBuffer;
+            var recOffset = connection.Buffer.BytesProcessed;
+            var sourceSlice = e.Buffer.AsSpan().Slice(recOffset, count);
+            var destinationSlice = connection.Buffer.MergeBuffer.AsSpan().Slice(destOffset);
 
             sourceSlice.CopyTo(destinationSlice);
 
-            connection.Buffer.BytesInBuffer += _count;
-            connection.Buffer.BytesProcessed += _count;
+            connection.Buffer.BytesInBuffer += count;
+            connection.Buffer.BytesProcessed += count;
         }
         private static void FinishPacket(ClientSocket connection)
         {

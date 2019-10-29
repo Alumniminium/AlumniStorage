@@ -34,7 +34,7 @@ namespace Universal.Packets
         public byte[] GetChunk()
         {
             var buffer = new byte[ChunkSize];
-            for (int i = 0; i < ChunkSize; i++)
+            for (var i = 0; i < ChunkSize; i++)
                 buffer[i] = Chunk[i];
             return buffer;
         }
@@ -46,7 +46,7 @@ namespace Universal.Packets
 
         public static MsgFile Create(string token, long size, int chunkSize, byte[] chunk, bool create)
         {
-            MsgFile* ptr = stackalloc MsgFile[1];
+            var ptr = stackalloc MsgFile[1];
 
             ptr->Length = sizeof(MsgFile);
             ptr->Compressed = false;
@@ -64,7 +64,7 @@ namespace Universal.Packets
         public static implicit operator byte[](MsgFile msg)
         {
             var buffer = ArrayPool<byte>.Shared.Rent(sizeof(MsgFile));
-            MemoryMarshal.Write<MsgFile>(buffer, ref msg);
+            MemoryMarshal.Write(buffer, ref msg);
             return buffer;
         }
         public static implicit operator MsgFile(byte[] msg)

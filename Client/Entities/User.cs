@@ -28,7 +28,7 @@ namespace Client.Entities
         public void Send(byte[] packet) => Socket?.Send(packet);
         public async ValueTask SendFile(string path, int tokenId)
         {
-            string token = Tokens[tokenId];
+            var token = Tokens[tokenId];
             using (var fileStream = File.Open(path, FileMode.Open, FileAccess.Read))
             {
                 var fileSize = fileStream.Length;
@@ -36,7 +36,7 @@ namespace Client.Entities
 
                 while (fileStream.Position != fileStream.Length)
                 {
-                    bool firstRead = fileStream.Position == 0;
+                    var firstRead = fileStream.Position == 0;
                     var readBytes = await fileStream.ReadAsync(chunk, 0, MsgFile.MAX_CHUNK_SIZE);
                     var msgFile = MsgFile.Create(token, fileSize, readBytes, chunk, firstRead);
                     Send(msgFile);

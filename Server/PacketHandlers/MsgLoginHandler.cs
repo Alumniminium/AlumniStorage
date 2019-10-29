@@ -3,7 +3,7 @@ using Universal.IO.FastConsole;
 using Universal.IO.Sockets.Client;
 using Universal.Packets;
 
-namespace Server
+namespace Server.PacketHandlers
 {
     public class MsgLoginHandler
     {

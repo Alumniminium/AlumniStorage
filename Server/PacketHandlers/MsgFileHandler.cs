@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,7 +6,7 @@ using Universal.IO;
 using Universal.IO.FastConsole;
 using Universal.Packets;
 
-namespace Server
+namespace Server.PacketHandlers
 {
     internal class MsgFileHandler
     {
@@ -40,7 +39,7 @@ namespace Server
 
         private static void Log(string path, FileStream filestream)
         {
-            int count = 0;
+            var count = 0;
             double size = filestream.Position;
             while (size > 1000)
             {

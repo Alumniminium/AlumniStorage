@@ -5,17 +5,13 @@ using System.Runtime.CompilerServices;
 
 namespace Benchmarks
 {
-    public unsafe struct MyStruct
-    {
-        public fixed byte fixedSource[100_000];
-    }
     [MemoryDiagnoser]
     [ThreadingDiagnoser]
     public unsafe class CopyTests
     {
-        private MyStruct StructSource;
-        private byte[] source;
-        private byte[] destination;
+        private MyStruct _structSource;
+        private byte[] _source;
+        private byte[] _destination;
 
         [Params(32, 500)]
         public int N;
@@ -23,63 +19,63 @@ namespace Benchmarks
         [GlobalSetup]
         public void Setup()
         {
-            source = new byte[N];
-            destination = new byte[N];
-            new Random(42).NextBytes(source);
+            _source = new byte[N];
+            _destination = new byte[N];
+            new Random(42).NextBytes(_source);
         }
         [Benchmark]
         public byte[] UnsafeCopy()
         {
-            fixed(byte* ptr = StructSource.fixedSource)
+            fixed(byte* ptr = _structSource.FixedSource)
             return Unsafe.Read<byte[]>(ptr);
         }
         [Benchmark]
         public Span<byte> UnsafeSpanCopy()
         {
-            fixed (byte* b = StructSource.fixedSource)
+            fixed (byte* b = _structSource.FixedSource)
                 return new Span<byte>(b, 100_000);
         }
         
         public byte[] SpanCopy()
         {
-            source.AsSpan().CopyTo(destination);
-            return destination;
+            _source.AsSpan().CopyTo(_destination);
+            return _destination;
         }
         public byte[] VectorizedCopy()
         {
-            source.VectorizedCopy(0, destination, 0, destination.Length);
-            return destination;
+            _source.VectorizedCopy(0, _destination, 0, _destination.Length);
+            return _destination;
         }
         public byte[] ArrayCopy()
         {
-            Array.Copy(source, 0, destination, 0, destination.Length);
-            return destination;
+            Array.Copy(_source, 0, _destination, 0, _destination.Length);
+            return _destination;
         }
 
         public byte[] BufferCopy()
         {
-            Buffer.BlockCopy(source, 0, destination, 0, destination.Length);
-            return destination;
+            Buffer.BlockCopy(_source, 0, _destination, 0, _destination.Length);
+            return _destination;
         }
-        public unsafe byte[] UnsafeForCopy()
+        public byte[] UnsafeForCopy()
         {
-            fixed (byte* ps = source)
-            fixed (byte* pd = destination)
+            fixed (byte* ps = _source)
+            fixed (byte* pd = _destination)
             {
-                for (int i = 0; i < destination.Length; i++)
+                for (var i = 0; i < _destination.Length; i++)
                 {
                     pd[i] = ps[i];
                 }
             }
-            return destination;
+            return _destination;
         }
         public byte[] ForCopy()
         {
-            for (int i = 0; i < destination.Length; i++)
+            for (var i = 0; i < _destination.Length; i++)
             {
-                destination[i] = source[i];
+                _destination[i] = _source[i];
             }
-            return destination;
+            return _destination;
         }
     }
 }
