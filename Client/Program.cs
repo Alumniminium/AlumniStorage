@@ -37,7 +37,7 @@ namespace Client
                         Client.Send(MsgLogin.Create("asd", "asdasd", false, MsgLoginType.Login));
                         break;
                     case "ping":
-                        var array = new byte[50];
+                        var array = new byte[100];
                         var random = new Random();
                         for (var i = 0; i < array.Length; i++)
                         {
