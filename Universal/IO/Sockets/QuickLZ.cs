@@ -167,7 +167,7 @@ namespace Universal.IO.Sockets
                     for (k = 0; k < QLZ_POINTERS_3 && c > k; k++)
                     {
                         o = hashtable[hash, k];
-                        if ((byte) fetch != source[o] || (byte) (fetch >> 8) != source[o + 1] || (byte) (fetch >> 16) != source[o + 2] || o >= src - MINOFFSET)
+                        if ((byte)fetch != source[o] || (byte)(fetch >> 8) != source[o + 1] || (byte)(fetch >> 16) != source[o + 2] || o >= src - MINOFFSET)
                             continue;
                         var m = 3;
                         while (source[o + m] == source[src + m] && m < remaining)
@@ -255,7 +255,7 @@ namespace Universal.IO.Sockets
             }
             fast_write(destination, cwordPtr, (int)((cwordVal >> 1) | 0x80000000), CWORD_LEN);
             Write_header(destination, level, true, size, dst);
-            d2 = ArrayPool<byte>.Shared.Rent(dst).SelfSetToDefaults();
+            d2 = ArrayPool<byte>.Shared.Rent(dst);
             Buffer.BlockCopy(destination, 0, d2, 0, dst);
             ArrayPool<byte>.Shared.Return(destination);
             return d2;

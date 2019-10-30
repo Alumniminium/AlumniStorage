@@ -29,7 +29,7 @@ namespace Universal.IO.Sockets
 
         internal int Compress(int size)
         {
-            var buffer=ArrayPool<byte>.Shared.Rent(400 + size - 6);
+            var buffer = ArrayPool<byte>.Shared.Rent(400 + size - 6);
             var compressedChunk = QuickLz.Compress(SendBuffer.AsSpan(6, size - 6).ToArray(), size - 6, 3, buffer);
             var compressedSize = compressedChunk.Length;
             var sizeBytes = BitConverter.GetBytes(compressedSize + 6);
@@ -37,7 +37,7 @@ namespace Universal.IO.Sockets
             sizeBytes.AsSpan().CopyTo(SendBuffer);
             compressedChunk.AsSpan().CopyTo(SendBuffer.AsSpan().Slice(6));
 
-            ArrayPool<byte>.Shared.Return(compressedChunk);
+            //ArrayPool<byte>.Shared.Return(compressedChunk);
             ArrayPool<byte>.Shared.Return(buffer);
             return compressedSize + 6;
         }

@@ -34,17 +34,17 @@ namespace Client
                 switch (msg)
                 {
                     case "login":
-                        Client.Send(MsgLogin.Create("asd", "asdasd", false, MsgLoginType.Login));
+                        Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
                         break;
                     case "ping":
-                        var array = new byte[100];
+                        var array = new byte[MsgBench.MAX_ARRAY_LENGTH];
                         var random = new Random();
                         for (var i = 0; i < array.Length; i++)
                         {
                             array[i] = (byte)random.Next(0, 255);
                         }
                         Stopwatch.Start();
-                        var msgBench = MsgBench.Create(array, false);
+                        var msgBench = MsgBench.Create(array, true);
                         Client.Send(msgBench);
                         break;
                     case "send":
@@ -74,7 +74,7 @@ namespace Client
         private static void Connected()
         {
             FConsole.WriteLine("Socket Connected! Logging in...");
-            Client.Send(MsgLogin.Create("asd", "asdasd", false, MsgLoginType.Login));
+            Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
         }
     }
 }

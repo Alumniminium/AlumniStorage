@@ -5,12 +5,11 @@ using Universal.IO.Sockets.Pools;
 
 namespace Universal.IO.Sockets.Server
 {
-
     public static class ServerSocket
     {
         internal static Socket Socket;
         public static int BufferSize { get; internal set; }
-        public static void Start(ushort port, int bufferSize = 500_500)
+        public static void Start(ushort port, int bufferSize = ushort.MaxValue)
         {
             BufferSize = bufferSize;
 

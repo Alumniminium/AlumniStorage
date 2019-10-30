@@ -19,7 +19,7 @@ namespace Universal.IO.Sockets.Queues
 
         static ReceiveQueue()
         {
-            var channel = Channel.CreateUnbounded<SocketAsyncEventArgs>(new UnboundedChannelOptions() { SingleReader = true, AllowSynchronousContinuations = true, SingleWriter = true });
+            var channel = Channel.CreateUnbounded<SocketAsyncEventArgs>(new UnboundedChannelOptions() { SingleReader = true });
             Reader = channel.Reader;
             Writer = channel.Writer;
             WorkerThread = new Thread(WorkLoop)

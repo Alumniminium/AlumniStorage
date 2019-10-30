@@ -12,7 +12,7 @@ namespace Client.Packethandlers
             Program.Stopwatch.Stop();
             FConsole.WriteLine("Took: " + Program.Stopwatch.Elapsed.TotalMilliseconds);
             Program.Stopwatch.Restart();
-            Program.Client.Send(MsgBench.Create(new byte[100], false));
+            Program.Client.Send(MsgBench.Create(new byte[64], false));
         }
 
     }

@@ -10,7 +10,7 @@ namespace Universal.Packets
     public unsafe struct MsgFile
     {
         public const int TOKEN_LENGTH = 32;
-        public const int MAX_CHUNK_SIZE = 500_000;
+        public const int MAX_CHUNK_SIZE = 65400;
         public int Length;
         public bool Compressed;
         public PacketType Id;

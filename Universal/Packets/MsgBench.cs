@@ -8,7 +8,7 @@ namespace Universal.Packets
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct MsgBench
     {
-        public const int MAX_ARRAY_LENGTH = 101;
+        public const int MAX_ARRAY_LENGTH = 64;
         public int Length { get; set; }
         public bool Compressed { get; set; }
         public PacketType Id { get; set; }

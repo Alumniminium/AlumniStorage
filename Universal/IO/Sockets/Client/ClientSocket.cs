@@ -18,7 +18,7 @@ namespace Universal.IO.Sockets.Client
         public int BufferSize => Buffer.MergeBuffer.Length;
         internal readonly NeutralBuffer Buffer;
 
-        public Semaphore SendSync = new Semaphore(1, 4);
+        public Semaphore SendSync = new Semaphore(1, 1);
 
         public ClientSocket(int bufferSize, object stateObject = null)
         {

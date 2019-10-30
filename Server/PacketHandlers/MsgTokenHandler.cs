@@ -23,7 +23,7 @@ namespace Server.PacketHandlers
 
             FConsole.WriteLine("Token Created: " + token + " for: " + path);
 
-            msgToken = MsgToken.Create(token, 0, false);
+            msgToken = MsgToken.Create(token, 0, true);
             user.Send(msgToken);
         }
     }
