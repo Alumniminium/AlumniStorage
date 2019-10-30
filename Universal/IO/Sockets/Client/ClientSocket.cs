@@ -12,13 +12,13 @@ namespace Universal.IO.Sockets.Client
     public class ClientSocket
     {
         public Action OnConnected, OnDisconnect;
+        public Action<ClientSocket, byte[]> OnPacket;
         internal Socket Socket;
         public object StateObject;
         public bool IsConnected;
         public int BufferSize => Buffer.MergeBuffer.Length;
         internal readonly NeutralBuffer Buffer;
-
-        public readonly AutoResetEvent SendSync = new AutoResetEvent(true);
+        internal readonly AutoResetEvent SendSync = new AutoResetEvent(true);
 
         public ClientSocket(int bufferSize, object stateObject = null)
         {
@@ -39,11 +39,10 @@ namespace Universal.IO.Sockets.Client
             var endPoint = new IPEndPoint(ipList.First(), port);
 
             if (IsConnected)
-                Disconnect("ConnectAsync() IsConnected == true");
+                Disconnect("ClientSocket.ConnectAsync() IsConnected == true");
 
             FConsole.WriteLine($"Connecting to {host} at {ipList.First()} on port {port}");
-            var connectArgs = SaeaPool.Get();
-            connectArgs.Completed += Completed;
+            var connectArgs = RentSaea();
             connectArgs.RemoteEndPoint = endPoint;
 
             try
@@ -53,16 +52,15 @@ namespace Universal.IO.Sockets.Client
             }
             catch (Exception ex)
             {
-                Disconnect($"ConnectAsync() if (!Socket.ConnectAsync(connectArgs)) -> {ex.Message} {ex.StackTrace}");
+                Disconnect($"ClientSocket.ConnectAsync() if (!Socket.ConnectAsync(connectArgs)) -> {ex.Message} {ex.StackTrace}");
             }
         }
 
         public void Receive()
         {
-            var e = SaeaPool.Get();
+            var e = RentSaea();
             e.SetBuffer(Buffer.ReceiveBuffer, 0, Buffer.ReceiveBuffer.Length);
-            e.UserToken = this;
-            e.Completed += Completed;
+
             try
             {
                 if (!Socket.ReceiveAsync(e))
@@ -70,22 +68,22 @@ namespace Universal.IO.Sockets.Client
             }
             catch (Exception ex)
             {
-                Disconnect($"Receive() if (!Socket.ReceiveAsync(e)) -> {ex.Message} {ex.StackTrace}");
+                Disconnect($"ClientSocket.Receive() if (!Socket.ReceiveAsync(e)) -> {ex.Message} {ex.StackTrace}");
             }
         }
         public void Send(byte[] packet)
         {
-            var e = SaeaPool.Get();
-            e.UserToken = this;
-            e.Completed += Completed;
+            SendSync.WaitOne();
+            var e = RentSaea();
             SendQueue.Add(e, packet);
         }
+
         internal void Completed(object sender, SocketAsyncEventArgs e)
         {
             if (e.SocketError != SocketError.Success)
             {
                 RecycleSaea(e);
-                Disconnect("ClientSocket.Sent() e.SocketError != SocketError.Success");
+                Disconnect("ClientSocket.Completed() e.SocketError != SocketError.Success");
                 return;
             }
 
@@ -95,7 +93,8 @@ namespace Universal.IO.Sockets.Client
                     ReceiveQueue.Add(e);
                     break;
                 case SocketAsyncOperation.Send:
-                    SendCompleted(e);
+                    RecycleSaea(e);
+                    SendSync.Set();
                     break;
                 case SocketAsyncOperation.Connect:
                     IsConnected = true;
@@ -105,21 +104,6 @@ namespace Universal.IO.Sockets.Client
                     break;
             }
         }
-
-        private void RecycleSaea(SocketAsyncEventArgs e)
-        {
-            e.SetBuffer(null);
-            e.Completed -= Completed;
-            e.UserToken = null;
-            SaeaPool.Return(e);
-        }
-
-        private void SendCompleted(SocketAsyncEventArgs e)
-        {
-            RecycleSaea(e);
-            SendSync.Set();
-        }
-
         public string GetIp() => ((IPEndPoint)Socket?.RemoteEndPoint)?.Address?.ToString();
 
         public void Disconnect(string reason)
@@ -128,6 +112,21 @@ namespace Universal.IO.Sockets.Client
             IsConnected = false;
             Socket?.Dispose();
             OnDisconnect?.Invoke();
+        }
+
+        private SocketAsyncEventArgs RentSaea()
+        {
+            var e = SaeaPool.Get();
+            e.UserToken = this;
+            e.Completed += Completed;
+            return e;
+        }
+        private void RecycleSaea(SocketAsyncEventArgs e)
+        {
+            e.SetBuffer(null);
+            e.Completed -= Completed;
+            e.UserToken = null;
+            SaeaPool.Return(e);
         }
     }
 }

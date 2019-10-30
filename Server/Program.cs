@@ -10,7 +10,7 @@ namespace Server
         static void Main()
         {
             Console.WriteLine("Hello World!");
-            ReceiveQueue.OnPacket += PacketRouter.Handle;
+            ServerSocket.OnPacket += PacketRouter.Handle;
             ServerSocket.Start(65533);
 
             while (true)

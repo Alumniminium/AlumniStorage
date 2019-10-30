@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,32 +12,39 @@ namespace Server.PacketHandlers
     internal class MsgFileHandler
     {
         public static Dictionary<string, string> Tokens = new Dictionary<string, string>();
+        public static ConcurrentDictionary<string, FileStream> Streams = new ConcurrentDictionary<string, FileStream>();
         internal static void Process(User user, byte[] packet)
         {
             var msgFile = (MsgFile)packet;
             var token = msgFile.GetToken();
             var kvp = user.Tokens.FirstOrDefault(n => n.Value == token);
-            var path = "/tmp/" + kvp.Key;
+            var path = "/dev/null";// + kvp.Key;
 
             if (string.IsNullOrEmpty(kvp.Key))
                 user.Disconnect("No token");
 
             var mode = msgFile.CreateFile ? FileMode.Create : FileMode.Append;
 
-            using (var filestream = new FileStream(path, mode))
+            if (mode == FileMode.Append)
             {
+                if (!Streams.TryGetValue(path, out var stream))
+                {
+                    stream = new FileStream(path, mode);
+                    Streams.TryAdd(path, stream);
+                }
                 var chunk = msgFile.GetChunk();
-                filestream.Write(chunk);
-                Log(path, filestream);
-                if (filestream.Position == msgFile.FileSize)
+                stream.Write(chunk);
+                Log(path, stream);
+                if (stream.Position == msgFile.FileSize)
                 {
                     user.Tokens.Remove(kvp.Key);
                     Tokens.Remove(kvp.Key);
-                    Log(path, filestream);
+                    Log(path, stream);
+                    Streams.TryRemove(path, out _);
+                    stream.Dispose();
                 }
             }
         }
-
         private static void Log(string path, FileStream filestream)
         {
             var count = 0;

@@ -23,7 +23,7 @@ namespace Client
             FConsole.WriteLine("Host: ");
             ServerHostname = Console.ReadLine().Trim();
             Client.OnConnected += Connected;
-            ReceiveQueue.OnPacket += PacketRouter.Handle;
+            Client.OnPacket += PacketRouter.Handle;
             Client.OnDisconnect += Disconnected;
             Client.ConnectAsync(ServerHostname, ServerPort);
 
@@ -57,8 +57,10 @@ namespace Client
                         while (!user.Tokens.ContainsKey(0))
                             Thread.Sleep(1);
                         FConsole.WriteLine("Uploading... using " + user.Tokens[0]);
+                        Stopwatch.Start();
                         await user.SendFile(@"/home/alumni/transcoder", 0);
-                        FConsole.WriteLine("Done.");
+                        Stopwatch.Stop();
+                        FConsole.WriteLine($"Done. {Stopwatch.Elapsed.TotalSeconds.ToString("##.##")}");
                         break;
                 }
             }

@@ -13,7 +13,6 @@ namespace Universal.IO.Sockets.Queues
         private static readonly Thread WorkerThread;
         private const int MIN_HEADER_SIZE = 4;
         private const int COMPRESSION_FLAG_OFFSET = 4;
-        public static Action<ClientSocket, byte[]> OnPacket;
         private static readonly ChannelWriter<SocketAsyncEventArgs> Writer;
         private static readonly ChannelReader<SocketAsyncEventArgs> Reader;
 
@@ -103,7 +102,9 @@ namespace Universal.IO.Sockets.Queues
 
             var packet = ArrayPool<byte>.Shared.Rent(connection.Buffer.BytesRequired);
             connection.Buffer.MergeBuffer.AsSpan().Slice(0, connection.Buffer.BytesRequired).CopyTo(packet);
-            OnPacket?.Invoke(connection, packet);
+
+            connection.OnPacket?.Invoke(connection, packet);
+
             ArrayPool<byte>.Shared.Return(packet);
 
             connection.Buffer.BytesInBuffer = 0;
