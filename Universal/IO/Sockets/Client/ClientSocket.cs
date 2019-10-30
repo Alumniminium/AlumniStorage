@@ -18,7 +18,7 @@ namespace Universal.IO.Sockets.Client
         public int BufferSize => Buffer.MergeBuffer.Length;
         internal readonly NeutralBuffer Buffer;
 
-        public Semaphore SendSync = new Semaphore(1, 1);
+        public readonly AutoResetEvent SendSync = new AutoResetEvent(true);
 
         public ClientSocket(int bufferSize, object stateObject = null)
         {
@@ -84,6 +84,7 @@ namespace Universal.IO.Sockets.Client
         {
             if (e.SocketError != SocketError.Success)
             {
+                RecycleSaea(e);
                 Disconnect("ClientSocket.Sent() e.SocketError != SocketError.Success");
                 return;
             }
@@ -99,18 +100,24 @@ namespace Universal.IO.Sockets.Client
                 case SocketAsyncOperation.Connect:
                     IsConnected = true;
                     OnConnected?.Invoke();
+                    RecycleSaea(e);
                     Receive();
                     break;
             }
         }
 
-        private void SendCompleted(SocketAsyncEventArgs e)
+        private void RecycleSaea(SocketAsyncEventArgs e)
         {
             e.SetBuffer(null);
             e.Completed -= Completed;
             e.UserToken = null;
             SaeaPool.Return(e);
-            SendSync.Release();
+        }
+
+        private void SendCompleted(SocketAsyncEventArgs e)
+        {
+            RecycleSaea(e);
+            SendSync.Set();
         }
 
         public string GetIp() => ((IPEndPoint)Socket?.RemoteEndPoint)?.Address?.ToString();
@@ -119,7 +126,7 @@ namespace Universal.IO.Sockets.Client
         {
             FConsole.WriteLine("Disconnecting: " + reason);
             IsConnected = false;
-            Socket.Dispose();
+            Socket?.Dispose();
             OnDisconnect?.Invoke();
         }
     }

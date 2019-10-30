@@ -4,16 +4,13 @@ using Universal.Packets;
 
 namespace Client.Packethandlers
 {
-    public class MsgBenchHandler
+    public static class MsgBenchHandler
     {
-
         public static void Process(User user, MsgBench packet)
         {
             Program.Stopwatch.Stop();
-            FConsole.WriteLine("Took: " + Program.Stopwatch.Elapsed.TotalMilliseconds);
+            FConsole.WriteLine("Took: " + Program.Stopwatch.Elapsed.TotalMilliseconds.ToString("0.00"));
             Program.Stopwatch.Restart();
-            Program.Client.Send(MsgBench.Create(new byte[64], false));
         }
-
     }
 }

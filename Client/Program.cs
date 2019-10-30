@@ -16,7 +16,7 @@ namespace Client
     {
         public static string ServerHostname = "localhost";
         public static ushort ServerPort = 65533;
-        public static ClientSocket Client = new ClientSocket(500_500);
+        public static ClientSocket Client = new ClientSocket(ushort.MaxValue);
         public static Stopwatch Stopwatch = new Stopwatch();
         public static async Task Main()
         {
@@ -44,8 +44,11 @@ namespace Client
                             array[i] = (byte)random.Next(0, 255);
                         }
                         Stopwatch.Start();
-                        var msgBench = MsgBench.Create(array, true);
-                        Client.Send(msgBench);
+                        for (var i = 0; i < 1000; i++)
+                        {
+                            var msgBench = MsgBench.Create(array, true);
+                            Client.Send(msgBench);
+                        }
                         break;
                     case "send":
                         var user = (User)Client.StateObject;
@@ -65,7 +68,7 @@ namespace Client
         {
             Thread.Sleep(1000);
             FConsole.WriteLine("Socket disconnected!");
-            Client = new ClientSocket(500_500);
+            Client = new ClientSocket(ushort.MaxValue);
             Client.OnConnected += Connected;
             Client.OnDisconnect += Disconnected;
             Client.ConnectAsync(ServerHostname, ServerPort);

@@ -2,7 +2,7 @@ using System;
 
 namespace Universal.IO.FastConsole
 {
-    public class ConsoleJob
+    public struct ConsoleJob
     {
         public string Text;
         public ConsoleColor Color;

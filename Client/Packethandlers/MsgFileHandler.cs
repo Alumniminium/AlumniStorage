@@ -31,7 +31,7 @@ namespace Client.Packethandlers
                         size = size / 1024;
                         count++;
                     }
-                    Console.WriteLine($"File {currentFileName} ({size.ToString("###.##")} {(FormatEnum)count}) received!");
+                    Console.WriteLine($"File {currentFileName} ({size:###.##} {(FormatEnum)count}) received!");
                 }
             }
         }

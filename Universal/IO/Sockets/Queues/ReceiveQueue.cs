@@ -39,8 +39,7 @@ namespace Universal.IO.Sockets.Queues
                     var clientSocket = (ClientSocket)e.UserToken;
                     AssemblePacket(clientSocket, e);
 
-                    if (clientSocket != null)
-                        e.Completed -= clientSocket.Completed;
+                    e.Completed -= clientSocket.Completed;
                     e.SetBuffer(null);
                     e.UserToken = null;
                     SaeaPool.Return(e);
@@ -108,6 +107,12 @@ namespace Universal.IO.Sockets.Queues
             ArrayPool<byte>.Shared.Return(packet);
 
             connection.Buffer.BytesInBuffer = 0;
+        }
+
+
+        public static void Die()
+        {
+            WorkerThread.Join(1000);
         }
     }
 }

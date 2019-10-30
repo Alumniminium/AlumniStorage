@@ -5,24 +5,30 @@ using Universal.Packets;
 
 namespace Client.Packethandlers
 {
-    internal class MsgLoginHandler
+    internal static class MsgLoginHandler
     {
         internal static void Process(ClientSocket clientSocket, byte[] packet)
         {
             var msgLogin = (MsgLogin)packet;
-            var username = msgLogin.GetUsername();
-            var password = msgLogin.GetPassword();
-            Console.WriteLine($"MsgLogin: {username} with password {password} (compressed: {msgLogin.Compressed}) requesting login.");
 
-            var user = new User
+            if (clientSocket.StateObject == null)
             {
-                Socket = clientSocket,
-                Username = username,
-                Password = password,
-                Id = msgLogin.UniqueId
-            };
-            user.Socket.OnDisconnect += user.OnDisconnect;
-            user.Socket.StateObject = user;
+                var username = msgLogin.GetUsername();
+                var password = msgLogin.GetPassword();
+                clientSocket.StateObject = new User();
+                ((User)clientSocket.StateObject).Username = username;
+                ((User)clientSocket.StateObject).Password = password;
+                ((User)clientSocket.StateObject).Socket = clientSocket;
+            }
+            else
+                clientSocket.OnDisconnect -= ((User)clientSocket.StateObject).OnDisconnect;
+
+            ((User)clientSocket.StateObject).Id = msgLogin.UniqueId;
+
+            clientSocket.OnDisconnect += ((User)clientSocket.StateObject).OnDisconnect;
+            ((User)clientSocket.StateObject).Socket.StateObject = ((User)clientSocket.StateObject);
+
+            Console.WriteLine($"MsgLogin: {((User)clientSocket.StateObject).Username} authenticated with UniqueId {((User)clientSocket.StateObject).Id}");
         }
     }
 }
