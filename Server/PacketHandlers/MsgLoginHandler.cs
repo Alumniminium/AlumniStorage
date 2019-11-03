@@ -21,7 +21,7 @@ namespace Server.PacketHandlers
                 Password = password,
                 Id = 1
             };
-            user.Socket.OnDisconnect += user.OnDisconnect;
+            //user.Socket.OnDisconnect += user.OnDisconnect;
             user.Socket.StateObject = user;
 
             msgLogin.UniqueId = user.Id;

@@ -15,7 +15,7 @@ namespace Universal.IO.Sockets.Pools
 
         private static void Fill()
         {
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < 129; i++)
             {
                 Queue.Enqueue(new SocketAsyncEventArgs());
             }
@@ -31,11 +31,14 @@ namespace Universal.IO.Sockets.Pools
                     Fill();
                 }
 
-                if (Queue.TryDequeue(out var e)) 
+                if (Queue.TryDequeue(out var e))
                     return e;
             }
         }
 
-        public static void Return(SocketAsyncEventArgs e) => Queue.Enqueue(e);
+        public static void Return(SocketAsyncEventArgs e)
+        {
+            Queue.Enqueue(e);
+        }
     }
 }

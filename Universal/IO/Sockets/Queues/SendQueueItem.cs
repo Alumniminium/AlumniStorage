@@ -8,10 +8,10 @@ namespace Universal.IO.Sockets.Queues
         public readonly SocketAsyncEventArgs Args;
         public readonly byte[] Packet;
         public readonly int Size;
-        public SendQueueItem(SocketAsyncEventArgs args, byte[] packet)
+        public SendQueueItem(SocketAsyncEventArgs args, byte[] packet, int size)
         {
             Args = args;
-            Size = BitConverter.ToInt32(packet, 0);
+            Size = size;
             Packet = packet;
         }
     }

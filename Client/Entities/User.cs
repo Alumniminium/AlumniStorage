@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Threading.Tasks;
 using Universal.IO.Sockets.Client;
+using Universal.IO.Sockets.Monitoring;
 using Universal.Packets;
 
 namespace Client.Entities
@@ -25,7 +27,11 @@ namespace Client.Entities
 
         }
 
-        public void Send(byte[] packet) => Socket?.Send(packet);
+        public void Send(byte[] packet)
+        {
+            NetworkMonitor.Log(BitConverter.ToInt32(packet, 0), TrafficMode.Out);
+            Socket?.Send(packet);
+        }
         public async ValueTask SendFile(string path, int tokenId)
         {
             var token = Tokens[tokenId];

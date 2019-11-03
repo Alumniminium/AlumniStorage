@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using Universal.IO.Sockets.Client;
 using Universal.IO.Sockets.Pools;
+using Universal.Packets;
 
 namespace Universal.IO.Sockets.Server
 {
@@ -10,7 +11,7 @@ namespace Universal.IO.Sockets.Server
     {
         public static Action<ClientSocket, byte[]> OnPacket;
         internal static Socket Socket;
-        public static int BufferSize { get; internal set; }
+        internal static int BufferSize;
         public static void Start(ushort port, int bufferSize = ushort.MaxValue)
         {
             BufferSize = bufferSize;
@@ -39,10 +40,12 @@ namespace Universal.IO.Sockets.Server
         {
             var receiveArgs = SaeaPool.Get();
             receiveArgs.UserToken = new ClientSocket(BufferSize);
-            ((ClientSocket)receiveArgs.UserToken).Socket = e.AcceptSocket;
-            ((ClientSocket)receiveArgs.UserToken).IsConnected = true;
-            ((ClientSocket)receiveArgs.UserToken).OnPacket += OnPacket;
-            ((ClientSocket)receiveArgs.UserToken).Receive();
+            var client = ((ClientSocket)receiveArgs.UserToken);
+            client.Socket = e.AcceptSocket;
+            client.IsConnected = true;
+            client.OnPacket += OnPacket;
+            client.Receive();
+            client.Diffie = new Crypto.DiffieHellman();
 
             e.Completed -= Accepted;
             e.AcceptSocket = null;

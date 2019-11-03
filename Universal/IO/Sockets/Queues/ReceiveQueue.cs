@@ -38,11 +38,7 @@ namespace Universal.IO.Sockets.Queues
                     var clientSocket = (ClientSocket)e.UserToken;
                     AssemblePacket(clientSocket, e);
 
-                    e.Completed -= clientSocket.Completed;
-                    e.SetBuffer(null);
-                    e.UserToken = null;
-                    SaeaPool.Return(e);
-
+                    clientSocket.RecycleSaea(e);
                     clientSocket.Receive();
                 }
             }
@@ -103,14 +99,17 @@ namespace Universal.IO.Sockets.Queues
             var packet = ArrayPool<byte>.Shared.Rent(connection.Buffer.BytesRequired);
             connection.Buffer.MergeBuffer.AsSpan().Slice(0, connection.Buffer.BytesRequired).CopyTo(packet);
 
+            if (connection.Encryption)
+            {
+                connection.Crypto.IV = packet.AsSpan().Slice(connection.Buffer.BytesRequired - 4).ToArray();
+                packet = connection.Crypto.CreateDecryptor().TransformFinalBlock(packet, 4, connection.Buffer.BytesRequired - 4);
+            }
             connection.OnPacket?.Invoke(connection, packet);
 
             ArrayPool<byte>.Shared.Return(packet);
 
             connection.Buffer.BytesInBuffer = 0;
         }
-
-
         public static void Die()
         {
             WorkerThread.Join(1000);

@@ -3,25 +3,22 @@ using System.Threading;
 
 namespace Universal.IO.Sockets.Monitoring
 {
-    public class NetworkMonitor
+    public static class NetworkMonitor
     {
-        public ulong PacketsPerSecondOutgoing { get; private set; }
-        public ulong PacketsPerSecondIncoming { get; private set; }
-        public ulong BytesSent { get; private set; }
-        public ulong BytesReceived { get; private set; }
-        public ulong UploadSpeed { get; private set; }
-        public ulong DownloadSpeed { get; private set; }
-        public ulong PacketsReceived { get; private set; }
-        public ulong PacketsSent { get; private set; }
+        public static ulong BytesSent { get; private set; }
+        public static ulong BytesReceived { get; private set; }
+        public static float UploadSpeed { get; private set; }
+        public static float DownloadSpeed { get; private set; }
+        public static ulong PacketsReceived { get; private set; }
+        public static ulong PacketsSent { get; private set; }
 
-        public ulong DownloadSpeedAverage => _lastTrafficIn / _counterSeconds;
-        public ulong UploadSpeedAverage => _lastTrafficOut / _counterSeconds;
+        public static float DownloadSpeedAverage => _lastTrafficIn / _counterSeconds;
+        public static float UploadSpeedAverage => _lastTrafficOut / _counterSeconds;
 
-        private ulong _lastTrafficIn, _lastTrafficOut, _counterSeconds = 1;
-        private readonly System.Timers.Timer _bandwidthTimer = new System.Timers.Timer(1000);
-        private readonly System.Timers.Timer _packetPerSecondTimer = new System.Timers.Timer(1000);
+        private static ulong _lastTrafficIn, _lastTrafficOut, _counterSeconds = 1;
+        private static readonly System.Timers.Timer _bandwidthTimer = new System.Timers.Timer(1000);
 
-        public NetworkMonitor()
+        static NetworkMonitor()
         {
             _bandwidthTimer.Elapsed += (sender, args) =>
             {
@@ -31,31 +28,22 @@ namespace Universal.IO.Sockets.Monitoring
 
                 _lastTrafficIn = BytesReceived;
                 _lastTrafficOut = BytesSent;
+                Console.Title = $"DL: {(DownloadSpeed / 1024f / 1024f):##0.00} MB/s (avg: {(DownloadSpeedAverage / 1024f / 1024f):##0.00})  UL: {(UploadSpeed / 1024 / 1024):##0.00} MB/s (avg: {(UploadSpeedAverage / 1024 / 1024):##0.00)}";
             };
             _bandwidthTimer.Enabled = true;
             _bandwidthTimer.Start();
-            Thread.Sleep(500);
-            _packetPerSecondTimer.Elapsed += (sender, args) =>
-            {
-                Console.Title = $"Packets per sec: Out: {PacketsPerSecondOutgoing} In: {PacketsPerSecondIncoming} | DL: {DownloadSpeedAverage / 1024} UL: {UploadSpeedAverage / 1024}";
-                PacketsPerSecondOutgoing = 0;
-                PacketsPerSecondIncoming = 0;
-            };
-            _packetPerSecondTimer.Enabled = true;
-            _packetPerSecondTimer.Start();
+            Thread.Sleep(1000);
         }
 
-        public void Log(int size, TrafficMode mode)
+        public static void Log(int size, TrafficMode mode)
         {
             switch (mode)
             {
                 case TrafficMode.In:
-                    PacketsPerSecondIncoming++;
                     PacketsReceived++;
                     BytesReceived += (ulong)size;
                     break;
                 case TrafficMode.Out:
-                    PacketsPerSecondOutgoing++;
                     PacketsSent++;
                     BytesSent += (ulong)size; break;
             }

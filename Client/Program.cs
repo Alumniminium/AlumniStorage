@@ -9,6 +9,7 @@ using Client.Entities;
 using Universal.IO.FastConsole;
 using System.Threading.Tasks;
 using Client.Packethandlers;
+using Universal.IO.Sockets.Crypto;
 
 namespace Client
 {
@@ -79,7 +80,9 @@ namespace Client
         private static void Connected()
         {
             FConsole.WriteLine("Socket Connected! Logging in...");
-            Client.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
+            Client.Diffie = new DiffieHellman(256).GenerateRequest();
+            var msgDh = MsgDH.Create(Client.Diffie.ToString());
+            Client.Send(msgDh);
         }
     }
 }

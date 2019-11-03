@@ -9,8 +9,8 @@ namespace Universal.IO.Sockets.Queues
 {
     public static class SendQueue
     {
-        private static readonly Thread WorkerThread;
         private const int COMPRESSION_FLAG_OFFSET = 4;
+        private static readonly Thread WorkerThread;
         private static readonly ChannelWriter<SendQueueItem> Writer;
         private static readonly ChannelReader<SendQueueItem> Reader;
         static SendQueue()
@@ -25,7 +25,7 @@ namespace Universal.IO.Sockets.Queues
             };
             WorkerThread.Start();
         }
-        public static void Add(SocketAsyncEventArgs e, byte[] packet) => Writer.TryWrite(new SendQueueItem(e, packet));
+        public static void Add(SocketAsyncEventArgs e, byte[] packet, int size) => Writer.TryWrite(new SendQueueItem(e, packet, size));
         public static async void WorkLoop()
         {
             while (await Reader.WaitToReadAsync())

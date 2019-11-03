@@ -1,5 +1,7 @@
 ﻿using System;
 using Server.PacketHandlers;
+using Universal.Exceptions;
+using Universal.IO.FastConsole;
 using Universal.IO.Sockets.Queues;
 using Universal.IO.Sockets.Server;
 
@@ -9,7 +11,8 @@ namespace Server
     {
         static void Main()
         {
-            Console.WriteLine("Hello World!");
+            GlobalExceptionHandler.Setup();
+            FConsole.WriteLine("Hello World!");
             ServerSocket.OnPacket += PacketRouter.Handle;
             ServerSocket.Start(65533);
 

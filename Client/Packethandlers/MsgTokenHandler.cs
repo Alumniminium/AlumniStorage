@@ -7,7 +7,6 @@ namespace Client.Packethandlers
     {
         public static void Process(User user, MsgToken msgToken)
         {
-
             if (user.Tokens.ContainsKey(msgToken.UniqueId))
                 user.Tokens[msgToken.UniqueId] = msgToken.GetToken;
             else

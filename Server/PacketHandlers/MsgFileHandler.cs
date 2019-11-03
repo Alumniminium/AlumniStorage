@@ -24,26 +24,19 @@ namespace Server.PacketHandlers
                 user.Disconnect("No token");
 
             var mode = msgFile.CreateFile ? FileMode.Create : FileMode.Append;
+            var chunk = msgFile.GetChunk();
+            var stream = GetCachedStream(path, mode);
 
-            if (mode == FileMode.Append)
+            stream.Write(chunk);
+
+            if (stream.Position == msgFile.FileSize)
             {
-                if (!Streams.TryGetValue(path, out var stream))
-                {
-                    stream = new FileStream(path, mode);
-                    Streams.TryAdd(path, stream);
-                }
-                var chunk = msgFile.GetChunk();
-                stream.Write(chunk);
+                user.Tokens.Remove(kvp.Key);
+                Tokens.Remove(kvp.Key);
                 Log(path, stream);
-                if (stream.Position == msgFile.FileSize)
-                {
-                    user.Tokens.Remove(kvp.Key);
-                    Tokens.Remove(kvp.Key);
-                    Log(path, stream);
-                    Streams.TryRemove(path, out _);
-                    stream.Dispose();
-                }
             }
+            if (mode == FileMode.Create)
+                stream.Dispose();
         }
         private static void Log(string path, FileStream filestream)
         {
@@ -54,7 +47,21 @@ namespace Server.PacketHandlers
                 size = size / 1024;
                 count++;
             }
-            FConsole.WriteLine($"File {path} ({size.ToString("###.##")} {(FormatEnum)count}) received!");
+            FConsole.WriteLine($"File {path} -> {filestream.Position} bytes written ({size.ToString("###.##")} {(FormatEnum)count}) received!");
+            Streams.TryRemove(path, out _);
+            filestream.Dispose();
+        }
+
+        public static FileStream GetCachedStream(string path, FileMode mode)
+        {
+            if (mode == FileMode.Create)
+                return new FileStream(path, mode);
+
+            if (Streams.TryGetValue(path, out var stream))
+                return stream;
+            stream = new FileStream(path, mode);
+            Streams.TryAdd(path, stream);
+            return stream;
         }
     }
 }

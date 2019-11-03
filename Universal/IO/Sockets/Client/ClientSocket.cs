@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Security.Cryptography;
+using System.Threading;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -6,6 +7,8 @@ using Universal.IO.FastConsole;
 using Universal.IO.Sockets.Pools;
 using Universal.IO.Sockets.Queues;
 using System.Linq;
+using Universal.IO.Sockets.Crypto;
+using System.Buffers;
 
 namespace Universal.IO.Sockets.Client
 {
@@ -19,6 +22,9 @@ namespace Universal.IO.Sockets.Client
         public int BufferSize => Buffer.MergeBuffer.Length;
         internal readonly NeutralBuffer Buffer;
         internal readonly AutoResetEvent SendSync = new AutoResetEvent(true);
+        public DiffieHellman Diffie;
+        public bool Encryption => Crypto != null;
+        public Aes Crypto;
 
         public ClientSocket(int bufferSize, object stateObject = null)
         {
@@ -42,11 +48,10 @@ namespace Universal.IO.Sockets.Client
                 Disconnect("ClientSocket.ConnectAsync() IsConnected == true");
 
             FConsole.WriteLine($"Connecting to {host} at {ipList.First()} on port {port}");
-            var connectArgs = RentSaea();
-            connectArgs.RemoteEndPoint = endPoint;
-
             try
             {
+                var connectArgs = RentSaea();
+                connectArgs.RemoteEndPoint = endPoint;
                 if (!Socket.ConnectAsync(connectArgs))
                     Completed(null, connectArgs);
             }
@@ -58,11 +63,10 @@ namespace Universal.IO.Sockets.Client
 
         public void Receive()
         {
-            var e = RentSaea();
-            e.SetBuffer(Buffer.ReceiveBuffer, 0, Buffer.ReceiveBuffer.Length);
-
             try
             {
+                var e = RentSaea();
+                e.SetBuffer(Buffer.ReceiveBuffer, 0, Buffer.ReceiveBuffer.Length);
                 if (!Socket.ReceiveAsync(e))
                     Completed(null, e);
             }
@@ -71,11 +75,26 @@ namespace Universal.IO.Sockets.Client
                 Disconnect($"ClientSocket.Receive() if (!Socket.ReceiveAsync(e)) -> {ex.Message} {ex.StackTrace}");
             }
         }
+
         public void Send(byte[] packet)
         {
             SendSync.WaitOne();
             var e = RentSaea();
-            SendQueue.Add(e, packet);
+
+            if (Encryption)
+            {
+                var lengthBytes = BitConverter.GetBytes(packet.Length + 16);
+                lengthBytes.AsSpan().CopyTo(packet);
+                var encryptedIV = ArrayPool<byte>.Shared.Rent(packet.Length + 16);
+                var encrypted = Crypto.CreateEncryptor().TransformFinalBlock(packet, 4, packet.Length - 4);
+                encrypted.AsSpan().CopyTo(encryptedIV.AsSpan(4));
+                Crypto.IV.AsSpan().CopyTo(encryptedIV.AsSpan().Slice(packet.Length));
+
+                ArrayPool<byte>.Shared.Return(packet);
+                SendQueue.Add(e, encryptedIV, packet.Length + 16);
+            }
+            else
+                SendQueue.Add(e, packet, packet.Length);
         }
 
         internal void Completed(object sender, SocketAsyncEventArgs e)
@@ -121,7 +140,7 @@ namespace Universal.IO.Sockets.Client
             e.Completed += Completed;
             return e;
         }
-        private void RecycleSaea(SocketAsyncEventArgs e)
+        internal void RecycleSaea(SocketAsyncEventArgs e)
         {
             e.SetBuffer(null);
             e.Completed -= Completed;
