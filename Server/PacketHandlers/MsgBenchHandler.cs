@@ -8,7 +8,7 @@ namespace Server.PacketHandlers
         public static void Process(ClientSocket user, byte[] packet)
         {
             var msgBench = (MsgBench)packet;
-            msgBench = MsgBench.Create(new byte[64], true);
+            msgBench = MsgBench.Create(new byte[64], false);
             user.Send(msgBench);
         }
     }

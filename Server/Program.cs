@@ -2,7 +2,6 @@
 using Server.PacketHandlers;
 using Universal.Exceptions;
 using Universal.IO.FastConsole;
-using Universal.IO.Sockets.Queues;
 using Universal.IO.Sockets.Server;
 
 namespace Server

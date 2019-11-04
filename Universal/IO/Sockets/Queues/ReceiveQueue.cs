@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Channels;
 using Universal.IO.Sockets.Client;
 using System.Buffers;
-using Universal.IO.Sockets.Pools;
 
 namespace Universal.IO.Sockets.Queues
 {
@@ -101,8 +100,9 @@ namespace Universal.IO.Sockets.Queues
 
             if (connection.Crypto != null)
             {
-                connection.Crypto.IV = packet.AsSpan().Slice(connection.Buffer.BytesRequired - 16).ToArray();
-                packet = connection.Crypto.CreateDecryptor().TransformFinalBlock(packet, 4, connection.Buffer.BytesRequired - 4);
+                connection.Crypto.IV = packet.AsSpan().Slice(connection.Buffer.BytesRequired - 16,16).ToArray();
+                var decryptedPacket = connection.Crypto.CreateDecryptor().TransformFinalBlock(packet, 6, connection.Buffer.BytesRequired-22);
+                decryptedPacket.CopyTo(packet.AsSpan().Slice(6));
             }
             connection.OnPacket?.Invoke(connection, packet);
 

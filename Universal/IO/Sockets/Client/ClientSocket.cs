@@ -8,7 +8,6 @@ using Universal.IO.Sockets.Pools;
 using Universal.IO.Sockets.Queues;
 using System.Linq;
 using Universal.IO.Sockets.Crypto;
-using System.Buffers;
 
 namespace Universal.IO.Sockets.Client
 {
@@ -83,18 +82,19 @@ namespace Universal.IO.Sockets.Client
                 Crypto.Key = Diffie.Key;
                 Crypto.IV = CryptoRandom.NextBytes(16);
                 var encrypt = Crypto.CreateEncryptor();
-                var header = packet.AsSpan().Slice(0, 4);
-                var data = packet.AsSpan().Slice(4);
-                var encryptedData = encrypt.TransformFinalBlock(data.ToArray(), 0, data.Length);
-                BitConverter.GetBytes(encryptedData.Length + 20).CopyTo(header);
-                var newPacket = new byte[encryptedData.Length + 20];
+                var header = packet.AsSpan().Slice(0, 6);
+                var size = BitConverter.ToInt32(packet, 0);
+                var data = packet.AsSpan().Slice(6);
+                var encryptedData = encrypt.TransformFinalBlock(data.ToArray(), 0, size-6);
+                BitConverter.GetBytes(encryptedData.Length + 22).CopyTo(header);
+                var newPacket = new byte[encryptedData.Length + 22];
                 header.CopyTo(newPacket);
-                encryptedData.CopyTo(newPacket.AsSpan().Slice(4));
-                Crypto.IV.CopyTo(newPacket.AsSpan().Slice(encryptedData.Length + header.Length));
+                encryptedData.CopyTo(newPacket.AsSpan().Slice(6));
+                Crypto.IV.CopyTo(newPacket.AsSpan().Slice(encryptedData.Length + 6));
                 SendQueue.Add(e, newPacket, newPacket.Length);
             }
             else
-                SendQueue.Add(e, packet, packet.Length);
+                SendQueue.Add(e, packet, BitConverter.ToInt32(packet,0));
         }
 
         internal void Completed(object sender, SocketAsyncEventArgs e)

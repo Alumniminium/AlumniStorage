@@ -26,7 +26,7 @@ namespace Client.Packethandlers
             ((User)clientSocket.StateObject).Id = msgLogin.UniqueId;
 
             clientSocket.OnDisconnect += ((User)clientSocket.StateObject).OnDisconnect;
-            ((User)clientSocket.StateObject).Socket.StateObject = ((User)clientSocket.StateObject);
+            ((User)clientSocket.StateObject).Socket.StateObject = (User)clientSocket.StateObject;
 
             Console.WriteLine($"MsgLogin: {((User)clientSocket.StateObject).Username} authenticated with UniqueId {((User)clientSocket.StateObject).Id}");
         }

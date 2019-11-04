@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using Universal.IO.Sockets.Client;
+﻿using Universal.IO.Sockets.Client;
 using System.Net.Sockets;
 using System.Threading;
 using System;

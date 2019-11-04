@@ -2,7 +2,6 @@
 using System;
 using System.Threading;
 using Universal.IO.Sockets.Client;
-using Universal.IO.Sockets.Queues;
 using Universal.Packets;
 using Universal.Packets.Enums;
 using Client.Entities;
@@ -47,7 +46,7 @@ namespace Client
                         Stopwatch.Start();
                         for (var i = 0; i < 1000; i++)
                         {
-                            var msgBench = MsgBench.Create(array, true);
+                            var msgBench = MsgBench.Create(array, false);
                             Client.Send(msgBench);
                         }
                         break;

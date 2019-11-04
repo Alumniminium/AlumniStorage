@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Universal.Packets.Enums;
 
@@ -8,7 +7,7 @@ namespace Universal.Packets
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public unsafe struct MsgDH
     {
-        public const int KEY_SIZE = 512;
+        public const int KEY_SIZE = 128;
         public int Length;
         public bool Compressed;
         public PacketType Id;
@@ -24,9 +23,8 @@ namespace Universal.Packets
         }
         public void SetPayload(string chunk)
         {
-            fixed (byte* p = PublicKey)
-                for (var i = 0; i < PayloadLength; i++)
-                    p[i] = (byte)chunk[i];
+            for (var i = 0; i < PayloadLength; i++)
+                PublicKey[i] = (byte)chunk[i];
         }
 
         public static MsgDH Create(string diffie)

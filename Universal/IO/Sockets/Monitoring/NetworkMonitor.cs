@@ -28,7 +28,7 @@ namespace Universal.IO.Sockets.Monitoring
 
                 _lastTrafficIn = BytesReceived;
                 _lastTrafficOut = BytesSent;
-                Console.Title = $"DL: {(DownloadSpeed / 1024f / 1024f):##0.00} MB/s (avg: {(DownloadSpeedAverage / 1024f / 1024f):##0.00})  UL: {(UploadSpeed / 1024 / 1024):##0.00} MB/s (avg: {(UploadSpeedAverage / 1024 / 1024):##0.00)}";
+                Console.Title = $"DL: {DownloadSpeed / 1024f / 1024f:##0.00} MB/s (avg: {DownloadSpeedAverage / 1024f / 1024f:##0.00})  UL: {UploadSpeed / 1024 / 1024:##0.00} MB/s (avg: {UploadSpeedAverage / 1024 / 1024:##0.00)}";
             };
             _bandwidthTimer.Enabled = true;
             _bandwidthTimer.Start();

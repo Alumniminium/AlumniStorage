@@ -1,6 +1,5 @@
 using System;
 using System.Buffers;
-using Universal.Extensions;
 
 namespace Universal.IO.Sockets
 {
@@ -17,31 +16,29 @@ namespace Universal.IO.Sockets
 
         private static int HeaderLen(Span<byte> source)
         {
-            return ((source[0] & 2) == 2) ? 9 : 3;
+            return (source[0] & 2) == 2 ? 9 : 3;
         }
 
         public static int SizeDecompressed(Span<byte> source)
         {
             if (HeaderLen(source) == 9)
                 return source[5] | (source[6] << 8) | (source[7] << 16) | (source[8] << 24);
-            else
-                return source[2];
+            return source[2];
         }
 
         public static int SizeCompressed(Span<byte> source)
         {
             if (HeaderLen(source) == 9)
                 return source[1] | (source[2] << 8) | (source[3] << 16) | (source[4] << 24);
-            else
-                return source[1];
+            return source[1];
         }
 
         private static void Write_header(byte[] dst, int level, bool compressible, int sizeCompressed, int sizeDecompressed)
         {
             dst[0] = (byte)(2 | (compressible ? 1 : 0));
             dst[0] |= (byte)(level << 2);
-            dst[0] |= (1 << 6);
-            dst[0] |= (0 << 4);
+            dst[0] |= 1 << 6;
+            dst[0] |= 0 << 4;
             fast_write(dst, 1, sizeDecompressed, 4);
             fast_write(dst, 5, sizeCompressed, 4);
         }
@@ -56,7 +53,7 @@ namespace Universal.IO.Sockets
             var hashCounter = new byte[HASH_VALUES];
             byte[] d2;
             var fetch = 0;
-            var lastMatchstart = (size - UNCONDITIONAL_MATCHLEN - UNCOMPRESSED_END - 1);
+            var lastMatchstart = size - UNCONDITIONAL_MATCHLEN - UNCOMPRESSED_END - 1;
             var lits = 0;
 
             var hashtable = level == 1 ? new int[HASH_VALUES, QLZ_POINTERS_1] : new int[HASH_VALUES, QLZ_POINTERS_3];
@@ -93,9 +90,9 @@ namespace Universal.IO.Sockets
                     cachetable[hash] = fetch;
                     hashtable[hash, 0] = src;
 
-                    if (cache == 0 && hashCounter[hash] != 0 && (src - o > MINOFFSET || (src == o + 1 && lits >= 3 && src > 3 && source[src] == source[src - 3] && source[src] == source[src - 2] && source[src] == source[src - 1] && source[src] == source[src + 1] && source[src] == source[src + 2])))
+                    if (cache == 0 && hashCounter[hash] != 0 && (src - o > MINOFFSET || src == o + 1 && lits >= 3 && src > 3 && source[src] == source[src - 3] && source[src] == source[src - 2] && source[src] == source[src - 1] && source[src] == source[src + 1] && source[src] == source[src + 2]))
                     {
-                        cwordVal = ((cwordVal >> 1) | 0x80000000);
+                        cwordVal = (cwordVal >> 1) | 0x80000000;
                         if (source[o + 3] != source[src + 3])
                         {
                             var f = 3 - 2 | (hash << 4);
@@ -107,7 +104,7 @@ namespace Universal.IO.Sockets
                         else
                         {
                             var oldSrc = src;
-                            var remaining = ((size - UNCOMPRESSED_END - src + 1 - 1) > 255 ? 255 : (size - UNCOMPRESSED_END - src + 1 - 1));
+                            var remaining = size - UNCOMPRESSED_END - src + 1 - 1 > 255 ? 255 : size - UNCOMPRESSED_END - src + 1 - 1;
 
                             src += 4;
                             if (source[o + src - oldSrc] == source[src])
@@ -116,7 +113,7 @@ namespace Universal.IO.Sockets
                                 if (source[o + src - oldSrc] == source[src])
                                 {
                                     src++;
-                                    while (source[o + (src - oldSrc)] == source[src] && (src - oldSrc) < remaining)
+                                    while (source[o + (src - oldSrc)] == source[src] && src - oldSrc < remaining)
                                         src++;
                                 }
                             }
@@ -126,7 +123,7 @@ namespace Universal.IO.Sockets
                             hash <<= 4;
                             if (matchlen < 18)
                             {
-                                var f = (hash | (matchlen - 2));
+                                var f = hash | (matchlen - 2);
                                 destination[dst + 0] = (byte)(f >> 0 * 8);
                                 destination[dst + 1] = (byte)(f >> 1 * 8);
                                 dst += 2;
@@ -145,7 +142,7 @@ namespace Universal.IO.Sockets
                         lits++;
                         hashCounter[hash] = 1;
                         destination[dst] = source[src];
-                        cwordVal = (cwordVal >> 1);
+                        cwordVal = cwordVal >> 1;
                         src++;
                         dst++;
                         fetch = ((fetch >> 8) & 0xffff) | (source[src + 2] << 16);
@@ -158,7 +155,7 @@ namespace Universal.IO.Sockets
 
                     int o;
                     int k;
-                    var remaining = ((size - UNCOMPRESSED_END - src + 1 - 1) > 255 ? 255 : (size - UNCOMPRESSED_END - src + 1 - 1));
+                    var remaining = size - UNCOMPRESSED_END - src + 1 - 1 > 255 ? 255 : size - UNCOMPRESSED_END - src + 1 - 1;
                     var hash = ((fetch >> 12) ^ fetch) & (HASH_VALUES - 1);
 
                     var c = hashCounter[hash];
@@ -172,7 +169,7 @@ namespace Universal.IO.Sockets
                         var m = 3;
                         while (source[o + m] == source[src + m] && m < remaining)
                             m++;
-                        if ((m > matchlen) || (m == matchlen && o > offset2))
+                        if (m > matchlen || m == matchlen && o > offset2)
                         {
                             offset2 = o;
                             matchlen = m;
@@ -196,39 +193,45 @@ namespace Universal.IO.Sockets
                         }
 
                         src += matchlen;
-                        cwordVal = ((cwordVal >> 1) | 0x80000000);
+                        cwordVal = (cwordVal >> 1) | 0x80000000;
 
-                        if (matchlen == 3 && offset <= 63)
+                        switch (matchlen)
                         {
-                            fast_write(destination, dst, offset << 2, 1);
-                            dst++;
-                        }
-                        else if (matchlen == 3 && offset <= 16383)
-                        {
-                            fast_write(destination, dst, (offset << 2) | 1, 2);
-                            dst += 2;
-                        }
-                        else if (matchlen <= 18 && offset <= 1023)
-                        {
-                            fast_write(destination, dst, ((matchlen - 3) << 2) | (offset << 6) | 2, 2);
-                            dst += 2;
-                        }
-                        else if (matchlen <= 33)
-                        {
-                            fast_write(destination, dst, ((matchlen - 2) << 2) | (offset << 7) | 3, 3);
-                            dst += 3;
-                        }
-                        else
-                        {
-                            fast_write(destination, dst, ((matchlen - 3) << 7) | (offset << 15) | 3, 4);
-                            dst += 4;
+                            case 3 when offset <= 63:
+                                fast_write(destination, dst, offset << 2, 1);
+                                dst++;
+                                break;
+                            case 3 when offset <= 16383:
+                                fast_write(destination, dst, (offset << 2) | 1, 2);
+                                dst += 2;
+                                break;
+                            default:
+                            {
+                                if (matchlen <= 18 && offset <= 1023)
+                                {
+                                    fast_write(destination, dst, ((matchlen - 3) << 2) | (offset << 6) | 2, 2);
+                                    dst += 2;
+                                }
+                                else if (matchlen <= 33)
+                                {
+                                    fast_write(destination, dst, ((matchlen - 2) << 2) | (offset << 7) | 3, 3);
+                                    dst += 3;
+                                }
+                                else
+                                {
+                                    fast_write(destination, dst, ((matchlen - 3) << 7) | (offset << 15) | 3, 4);
+                                    dst += 4;
+                                }
+
+                                break;
+                            }
                         }
                         lits = 0;
                     }
                     else
                     {
                         destination[dst] = source[src];
-                        cwordVal = (cwordVal >> 1);
+                        cwordVal = cwordVal >> 1;
                         src++;
                         dst++;
                     }
@@ -247,11 +250,11 @@ namespace Universal.IO.Sockets
                 destination[dst] = source[src];
                 src++;
                 dst++;
-                cwordVal = (cwordVal >> 1);
+                cwordVal = cwordVal >> 1;
             }
             while ((cwordVal & 1) != 1)
             {
-                cwordVal = (cwordVal >> 1);
+                cwordVal = cwordVal >> 1;
             }
             fast_write(destination, cwordPtr, (int)((cwordVal >> 1) | 0x80000000), CWORD_LEN);
             Write_header(destination, level, true, size, dst);
@@ -360,7 +363,7 @@ namespace Universal.IO.Sockets
                         }
                         else
                         {
-                            offset = (fetch >> 15);
+                            offset = fetch >> 15;
                             matchlen = ((fetch >> 7) & 255) + 3;
                             src += 4;
                         }

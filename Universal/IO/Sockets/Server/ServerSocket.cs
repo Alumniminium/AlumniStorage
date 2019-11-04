@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Sockets;
 using Universal.IO.Sockets.Client;
 using Universal.IO.Sockets.Pools;
-using Universal.Packets;
 
 namespace Universal.IO.Sockets.Server
 {
@@ -40,7 +39,7 @@ namespace Universal.IO.Sockets.Server
         {
             var receiveArgs = SaeaPool.Get();
             receiveArgs.UserToken = new ClientSocket(BufferSize);
-            var client = ((ClientSocket)receiveArgs.UserToken);
+            var client = (ClientSocket)receiveArgs.UserToken;
             client.Socket = e.AcceptSocket;
             client.IsConnected = true;
             client.OnPacket += OnPacket;

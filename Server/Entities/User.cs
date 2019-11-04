@@ -2,7 +2,6 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using Universal.IO.FastConsole;
 using Universal.IO.Sockets.Client;
 using Universal.IO.Sockets.Monitoring;
 using Universal.Packets;
