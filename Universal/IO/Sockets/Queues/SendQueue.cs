@@ -37,7 +37,7 @@ namespace Universal.IO.Sockets.Queues
                     var size = item.Size;
 
                     packet.AsSpan().Slice(0, item.Size).CopyTo(connection.Buffer.SendBuffer);
-                    ArrayPool<byte>.Shared.Return(packet);
+                    //ArrayPool<byte>.Shared.Return(packet);
 
                     if (connection.Buffer.SendBuffer[COMPRESSION_FLAG_OFFSET] == 1)
                         size = connection.Buffer.Compress(size);

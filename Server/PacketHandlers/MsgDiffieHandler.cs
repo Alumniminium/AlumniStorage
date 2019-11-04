@@ -12,9 +12,9 @@ namespace Server.PacketHandlers
         {
             var b = packet.GetPayload();
             clientSocket.Diffie = new Universal.IO.Sockets.Crypto.DiffieHellman(256).GenerateResponse(Encoding.ASCII.GetString(b));
+            clientSocket.Send(MsgDH.Create(clientSocket.Diffie.ToString()));
             clientSocket.Crypto = new AesManaged();
             clientSocket.Crypto.Key = clientSocket.Diffie.Key;
-            clientSocket.Send(MsgDH.Create(clientSocket.Diffie.ToString()));
         }
     }
 }

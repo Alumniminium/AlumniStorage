@@ -19,11 +19,9 @@ namespace Universal.IO.Sockets.Client
         internal Socket Socket;
         public object StateObject;
         public bool IsConnected;
-        public int BufferSize => Buffer.MergeBuffer.Length;
         internal readonly NeutralBuffer Buffer;
         internal readonly AutoResetEvent SendSync = new AutoResetEvent(true);
         public DiffieHellman Diffie;
-        public bool Encryption => Crypto != null;
         public Aes Crypto;
 
         public ClientSocket(int bufferSize, object stateObject = null)
@@ -75,23 +73,25 @@ namespace Universal.IO.Sockets.Client
                 Disconnect($"ClientSocket.Receive() if (!Socket.ReceiveAsync(e)) -> {ex.Message} {ex.StackTrace}");
             }
         }
-
         public void Send(byte[] packet)
         {
             SendSync.WaitOne();
             var e = RentSaea();
 
-            if (Encryption)
+            if (Crypto != null)
             {
-                var lengthBytes = BitConverter.GetBytes(packet.Length + 16);
-                lengthBytes.AsSpan().CopyTo(packet);
-                var encryptedIV = ArrayPool<byte>.Shared.Rent(packet.Length + 16);
-                var encrypted = Crypto.CreateEncryptor().TransformFinalBlock(packet, 4, packet.Length - 4);
-                encrypted.AsSpan().CopyTo(encryptedIV.AsSpan(4));
-                Crypto.IV.AsSpan().CopyTo(encryptedIV.AsSpan().Slice(packet.Length));
-
-                ArrayPool<byte>.Shared.Return(packet);
-                SendQueue.Add(e, encryptedIV, packet.Length + 16);
+                Crypto.Key = Diffie.Key;
+                Crypto.IV = CryptoRandom.NextBytes(16);
+                var encrypt = Crypto.CreateEncryptor();
+                var header = packet.AsSpan().Slice(0, 4);
+                var data = packet.AsSpan().Slice(4);
+                var encryptedData = encrypt.TransformFinalBlock(data.ToArray(), 0, data.Length);
+                BitConverter.GetBytes(encryptedData.Length + 20).CopyTo(header);
+                var newPacket = new byte[encryptedData.Length + 20];
+                header.CopyTo(newPacket);
+                encryptedData.CopyTo(newPacket.AsSpan().Slice(4));
+                Crypto.IV.CopyTo(newPacket.AsSpan().Slice(encryptedData.Length + header.Length));
+                SendQueue.Add(e, newPacket, newPacket.Length);
             }
             else
                 SendQueue.Add(e, packet, packet.Length);

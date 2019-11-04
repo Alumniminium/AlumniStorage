@@ -16,7 +16,6 @@ namespace Client.Packethandlers
             clientSocket.Diffie.HandleResponse(Encoding.ASCII.GetString(b));
             clientSocket.Crypto = AesManaged.Create();
             clientSocket.Crypto.Key = clientSocket.Diffie.Key;
-            clientSocket.Crypto.IV = CryptoRandom.NextBytes(16);
             clientSocket.Send(MsgLogin.Create("asd", "asdasd", true, MsgLoginType.Login));
         }
     }

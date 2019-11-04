@@ -99,9 +99,9 @@ namespace Universal.IO.Sockets.Queues
             var packet = ArrayPool<byte>.Shared.Rent(connection.Buffer.BytesRequired);
             connection.Buffer.MergeBuffer.AsSpan().Slice(0, connection.Buffer.BytesRequired).CopyTo(packet);
 
-            if (connection.Encryption)
+            if (connection.Crypto != null)
             {
-                connection.Crypto.IV = packet.AsSpan().Slice(connection.Buffer.BytesRequired - 4).ToArray();
+                connection.Crypto.IV = packet.AsSpan().Slice(connection.Buffer.BytesRequired - 16).ToArray();
                 packet = connection.Crypto.CreateDecryptor().TransformFinalBlock(packet, 4, connection.Buffer.BytesRequired - 4);
             }
             connection.OnPacket?.Invoke(connection, packet);
