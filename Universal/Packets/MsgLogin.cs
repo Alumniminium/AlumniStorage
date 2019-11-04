@@ -11,9 +11,7 @@ namespace Universal.Packets
         public const int MAX_USERNAME_LENGTH = 32;
         public const int MAX_PASSWORD_LENGTH = 32;
 
-        public int Length{get;set;}
-        public bool Compressed{get;set;}
-        public PacketType Id{get;set;}
+        public MsgHeader Header;
         public int UniqueId { get; set; }
         public MsgLoginType Type { get; set; }
 
@@ -46,9 +44,9 @@ namespace Universal.Packets
         public static MsgLogin Create(string user, string pass, bool compression, MsgLoginType type)
         {
             var ptr = stackalloc MsgLogin[1];
-            ptr->Length = sizeof(MsgLogin);
-            ptr->Compressed = compression;
-            ptr->Id = PacketType.MsgLogin;
+            ptr->Header.Length = sizeof(MsgLogin);
+            ptr->Header.Compressed = compression;
+            ptr->Header.Id = PacketType.MsgLogin;
             ptr->Type = type;
             ptr->SetUsername(user);
             ptr->SetPassword(pass);

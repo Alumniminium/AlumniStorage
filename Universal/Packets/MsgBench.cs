@@ -9,9 +9,7 @@ namespace Universal.Packets
     public unsafe struct MsgBench
     {
         public const int MAX_ARRAY_LENGTH = 64;
-        public int Length { get; set; }
-        public bool Compressed { get; set; }
-        public PacketType Id { get; set; }
+        public MsgHeader Header;
         public fixed byte Array[MAX_ARRAY_LENGTH];
 
         public Span<byte> GetArray()
@@ -29,9 +27,12 @@ namespace Universal.Packets
         {
             var ptr = stackalloc MsgBench[1];
 
-            ptr->Length = sizeof(MsgBench);
-            ptr->Compressed = compression;
-            ptr->Id = PacketType.MsgBench;
+            ptr->Header = new MsgHeader
+            {
+                Length = sizeof(MsgBench), 
+                Compressed = compression, 
+                Id = PacketType.MsgBench
+            };
 
             ptr->SetArray(array);
             return *ptr;

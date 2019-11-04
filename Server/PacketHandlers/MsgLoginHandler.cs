@@ -5,14 +5,14 @@ using Universal.Packets;
 
 namespace Server.PacketHandlers
 {
-    public class MsgLoginHandler
+    public static class MsgLoginHandler
     {
         internal static void Process(ClientSocket userSocket, byte[] packet)
         {
             var msgLogin = (MsgLogin)packet;
             var username = msgLogin.GetUsername();
             var password = msgLogin.GetPassword();
-            FConsole.WriteLine($"MsgLogin: {username} with password {password} (compressed: {msgLogin.Compressed}) requesting login.");
+            FConsole.WriteLine($"MsgLogin: {username} with password {password} (compressed: {msgLogin.Header.Compressed}) requesting login.");
 
             var user = new User
             {

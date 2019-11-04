@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 using Universal.IO.Sockets.Client;
+using Universal.IO.Sockets.Cryptography;
 using Universal.IO.Sockets.Pools;
 
 namespace Universal.IO.Sockets.Server
@@ -44,7 +45,7 @@ namespace Universal.IO.Sockets.Server
             client.IsConnected = true;
             client.OnPacket += OnPacket;
             client.Receive();
-            client.Diffie = new Crypto.DiffieHellman();
+            client.Diffie = new DiffieHellman();
 
             e.Completed -= Accepted;
             e.AcceptSocket = null;

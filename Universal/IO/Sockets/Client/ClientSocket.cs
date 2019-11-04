@@ -1,13 +1,12 @@
-﻿using System.Security.Cryptography;
-using System.Threading;
-using System;
+﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using Universal.IO.FastConsole;
-using Universal.IO.Sockets.Pools;
+using Universal.IO.Sockets.Cryptography;
 using Universal.IO.Sockets.Queues;
-using System.Linq;
-using Universal.IO.Sockets.Crypto;
+using Universal.Packets;
 
 namespace Universal.IO.Sockets.Client
 {
@@ -20,8 +19,10 @@ namespace Universal.IO.Sockets.Client
         public bool IsConnected;
         internal readonly NeutralBuffer Buffer;
         internal readonly AutoResetEvent SendSync = new AutoResetEvent(true);
+        internal readonly SocketAsyncEventArgs ReceiveArgs;
+        internal readonly SocketAsyncEventArgs SendArgs;
         public DiffieHellman Diffie;
-        public Aes Crypto;
+        public Crypto Crypto;
 
         public ClientSocket(int bufferSize, object stateObject = null)
         {
@@ -31,8 +32,18 @@ namespace Universal.IO.Sockets.Client
                 Blocking = false,
                 UseOnlyOverlappedIO = true
             };
-
             Buffer = new NeutralBuffer(bufferSize);
+
+            ReceiveArgs = new SocketAsyncEventArgs();
+            ReceiveArgs.Completed += Completed;
+            ReceiveArgs.SetBuffer(Buffer.ReceiveBuffer);
+            ReceiveArgs.UserToken = this;
+
+            SendArgs = new SocketAsyncEventArgs();
+            SendArgs.Completed += Completed;
+            SendArgs.SetBuffer(Buffer.SendBuffer);
+            SendArgs.UserToken = this;
+
             StateObject = stateObject;
         }
 
@@ -47,7 +58,10 @@ namespace Universal.IO.Sockets.Client
             FConsole.WriteLine($"Connecting to {host} at {ipList.First()} on port {port}");
             try
             {
-                var connectArgs = RentSaea();
+                var connectArgs = new SocketAsyncEventArgs();
+                connectArgs.Completed += Completed;
+                connectArgs.UserToken = this;
+
                 connectArgs.RemoteEndPoint = endPoint;
                 if (!Socket.ConnectAsync(connectArgs))
                     Completed(null, connectArgs);
@@ -62,46 +76,43 @@ namespace Universal.IO.Sockets.Client
         {
             try
             {
-                var e = RentSaea();
-                e.SetBuffer(Buffer.ReceiveBuffer, 0, Buffer.ReceiveBuffer.Length);
-                if (!Socket.ReceiveAsync(e))
-                    Completed(null, e);
+                ReceiveArgs.SetBuffer(Buffer.ReceiveBuffer, 0, Buffer.ReceiveBuffer.Length);
+                if (!Socket.ReceiveAsync(ReceiveArgs))
+                    Completed(null, ReceiveArgs);
             }
             catch (Exception ex)
             {
                 Disconnect($"ClientSocket.Receive() if (!Socket.ReceiveAsync(e)) -> {ex.Message} {ex.StackTrace}");
             }
         }
-        public void Send(byte[] packet)
+        public unsafe void Send(byte[] packet)
         {
             SendSync.WaitOne();
-            var e = RentSaea();
 
             if (Crypto != null)
             {
-                Crypto.Key = Diffie.Key;
-                Crypto.IV = CryptoRandom.NextBytes(16);
-                var encrypt = Crypto.CreateEncryptor();
-                var header = packet.AsSpan().Slice(0, 6);
+                var iv = Crypto.SetRandomIV();
                 var size = BitConverter.ToInt32(packet, 0);
-                var data = packet.AsSpan().Slice(6);
-                var encryptedData = encrypt.TransformFinalBlock(data.ToArray(), 0, size-6);
-                BitConverter.GetBytes(encryptedData.Length + 22).CopyTo(header);
-                var newPacket = new byte[encryptedData.Length + 22];
+                var header = packet.AsSpan().Slice(0, sizeof(MsgHeader));
+                var data = packet.AsSpan().Slice(sizeof(MsgHeader), size - sizeof(MsgHeader));
+
+                var encryptedData = Crypto.Encrypt(data.ToArray());
+                BitConverter.GetBytes(encryptedData.Length + sizeof(MsgHeader)).CopyTo(header);
+                iv.CopyTo(header.Slice(sizeof(MsgHeader)-16,16));
+
+                var newPacket = new byte[encryptedData.Length + sizeof(MsgHeader)];
                 header.CopyTo(newPacket);
-                encryptedData.CopyTo(newPacket.AsSpan().Slice(6));
-                Crypto.IV.CopyTo(newPacket.AsSpan().Slice(encryptedData.Length + 6));
-                SendQueue.Add(e, newPacket, newPacket.Length);
+                encryptedData.CopyTo(newPacket.AsSpan().Slice(sizeof(MsgHeader)));
+                SendQueue.Add(SendArgs, newPacket, newPacket.Length);
             }
             else
-                SendQueue.Add(e, packet, BitConverter.ToInt32(packet,0));
+                SendQueue.Add(SendArgs, packet, BitConverter.ToInt32(packet,0));
         }
 
         internal void Completed(object sender, SocketAsyncEventArgs e)
         {
             if (e.SocketError != SocketError.Success)
             {
-                RecycleSaea(e);
                 Disconnect("ClientSocket.Completed() e.SocketError != SocketError.Success");
                 return;
             }
@@ -109,16 +120,14 @@ namespace Universal.IO.Sockets.Client
             switch (e.LastOperation)
             {
                 case SocketAsyncOperation.Receive:
-                    ReceiveQueue.Add(e);
+                    ReceiveQueue.Add(this);
                     break;
                 case SocketAsyncOperation.Send:
-                    RecycleSaea(e);
                     SendSync.Set();
                     break;
                 case SocketAsyncOperation.Connect:
                     IsConnected = true;
                     OnConnected?.Invoke();
-                    RecycleSaea(e);
                     Receive();
                     break;
             }
@@ -131,21 +140,6 @@ namespace Universal.IO.Sockets.Client
             IsConnected = false;
             Socket?.Dispose();
             OnDisconnect?.Invoke();
-        }
-
-        private SocketAsyncEventArgs RentSaea()
-        {
-            var e = SaeaPool.Get();
-            e.UserToken = this;
-            e.Completed += Completed;
-            return e;
-        }
-        internal void RecycleSaea(SocketAsyncEventArgs e)
-        {
-            e.SetBuffer(null);
-            e.Completed -= Completed;
-            e.UserToken = null;
-            SaeaPool.Return(e);
         }
     }
 }

@@ -9,12 +9,17 @@ namespace Benchmarks
     [ThreadingDiagnoser]
     public unsafe class CopyTests
     {
-        private MyStruct _structSource;
+        private readonly MyStruct _structSource;
         private byte[] _source;
         private byte[] _destination;
 
         [Params(32, 500)]
         public int N;
+
+        public CopyTests(MyStruct structSource)
+        {
+            _structSource = structSource;
+        }
 
         [GlobalSetup]
         public void Setup()

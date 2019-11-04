@@ -1,9 +1,9 @@
 using System;
 using System.Text;
 
-namespace Universal.IO.Sockets.Crypto
+namespace Universal.IO.Sockets.Cryptography
 {
-    public class DiffieHellman : IDisposable
+    public class DiffieHellman
     {
         private readonly int _bits = 521;
         private BigInteger _prime;
@@ -20,12 +20,7 @@ namespace Universal.IO.Sockets.Crypto
         {
             _bits = bits;
         }
-
-        ~DiffieHellman()
-        {
-            Dispose();
-        }
-
+        
         /// <summary>
         /// Generates a request packet.
         /// </summary>
@@ -45,7 +40,7 @@ namespace Universal.IO.Sockets.Crypto
             rep.Append("|");
 
             // Generate the send BigInt.
-            using (var send = _g.ModPow(_mine, _prime))
+            var send = _g.ModPow(_mine, _prime);
             {
                 rep.Append(send.ToString(36));
             }
@@ -64,18 +59,18 @@ namespace Universal.IO.Sockets.Crypto
             var parts = request.Split('|');
 
             // Generate the would-be fields.
-            using (var prime = new BigInteger(parts[0], 36))
-            using (var g = new BigInteger(parts[1], 36))
-            using (var mine = BigInteger.GenPseudoPrime(_bits, 30))
+            var prime = new BigInteger(parts[0], 36);
+            var g = new BigInteger(parts[1], 36);
+            var mine = BigInteger.GenPseudoPrime(_bits, 30);
             {
                 // Generate the key.
-                using (var given = new BigInteger(parts[2], 36))
-                using (var key = given.ModPow(mine, prime))
+                var given = new BigInteger(parts[2], 36);
+                var key = given.ModPow(mine, prime);
                 {
                     Key = key.GetBytes();
                 }
                 // Generate the response.
-                using (var send = g.ModPow(mine, prime))
+                var send = g.ModPow(mine, prime);
                 {
                     _representation = send.ToString(36);
                 }
@@ -91,28 +86,12 @@ namespace Universal.IO.Sockets.Crypto
         public void HandleResponse(string response)
         {
             // Get the response and modpow it with the stored prime.
-            using (var given = new BigInteger(response, 36))
-            using (var key = given.ModPow(_mine, _prime))
+            var given = new BigInteger(response, 36);
+            var key = given.ModPow(_mine, _prime);
             {
                 Key = key.GetBytes();
             }
-            Dispose();
         }
-
-
         public override string ToString() => _representation;
-
-        public void Dispose()
-        {
-            _prime?.Dispose();
-            _mine?.Dispose();
-            _g?.Dispose();
-
-            _prime = null;
-            _mine = null;
-            _g = null;
-
-            _representation = null;
-        }
     }
 }

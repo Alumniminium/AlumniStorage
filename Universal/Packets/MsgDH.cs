@@ -8,9 +8,7 @@ namespace Universal.Packets
     public unsafe struct MsgDH
     {
         public const int KEY_SIZE = 128;
-        public int Length;
-        public bool Compressed;
-        public PacketType Id;
+        public MsgHeader Header;
         public int PayloadLength;
         public fixed byte PublicKey[KEY_SIZE];
 
@@ -31,9 +29,9 @@ namespace Universal.Packets
         {
             var ptr = stackalloc MsgDH[1];
 
-            ptr->Length = sizeof(MsgDH);
-            ptr->Compressed = false;
-            ptr->Id = PacketType.MsgHandshake;
+            ptr->Header.Length = sizeof(MsgDH);
+            ptr->Header.Compressed = false;
+            ptr->Header.Id = PacketType.MsgHandshake;
             ptr->PayloadLength = diffie.Length;
             ptr->SetPayload(diffie);
 

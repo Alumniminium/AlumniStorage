@@ -5,9 +5,9 @@ using System;
 // Copyright (c) 2002 Chew Keong TAN
 // All rights reserved.
 
-namespace Universal.IO.Sockets.Crypto
+namespace Universal.IO.Sockets.Cryptography
 {
-    internal class BigInteger : IDisposable
+    internal class BigInteger
     {
         private const int MAX_LENGTH = 50;
 
@@ -33,7 +33,7 @@ namespace Universal.IO.Sockets.Crypto
             1801, 1811, 1823, 1831, 1847, 1861, 1867, 1871, 1873, 1877, 1879, 1889,
             1901, 1907, 1913, 1931, 1933, 1949, 1951, 1973, 1979, 1987, 1993, 1997, 1999 };
 
-        private uint[] _data = null;
+        private uint[] _data;
         public int DataLength; 
         public BigInteger()
         {
@@ -127,10 +127,10 @@ namespace Universal.IO.Sockets.Crypto
                     if (value[0] == '-')
                         posVal = -posVal;
 
-                    result = result + multiplier * posVal;
+                    result += multiplier * posVal;
 
                     if (i - 1 >= limit)
-                        multiplier = multiplier * radix;
+                        multiplier *= radix;
                 }
             }
 
@@ -887,7 +887,7 @@ namespace Universal.IO.Sockets.Crypto
             for (var i = 0; i < bi1.DataLength; i++)
                 remainder[i] = bi1._data[i];
             ShiftLeft(remainder, shift);
-            bi2 = bi2 << shift;
+            bi2 <<= shift;
 
             /*
             Console.WriteLine("bi1 Len = {0}, bi2 Len = {1}", bi1.dataLength, bi2.dataLength);
@@ -1381,7 +1381,7 @@ namespace Universal.IO.Sockets.Crypto
             constant._data[i] = 0x00000001;
             constant.DataLength = i + 1;
 
-            constant = constant / n;
+            constant /= n;
             var totalBits = exp.BitCount();
             var count = 0;
 
@@ -2012,7 +2012,7 @@ namespace Universal.IO.Sockets.Crypto
             constant._data[nLen] = 0x00000001;
             constant.DataLength = nLen + 1;
 
-            constant = constant / thisVal;
+            constant /= thisVal;
 
             var lucas = LucasSequenceHelper(1, q, t, thisVal, constant, 0);
             var isPrime = false;
@@ -2197,7 +2197,7 @@ namespace Universal.IO.Sockets.Crypto
 
             var t = pSub1 >> s;
 
-            var bits = thisVal.BitCount();
+            thisVal.BitCount();
             BigInteger a = 2;
 
             // b = a^t mod p
@@ -2243,9 +2243,7 @@ namespace Universal.IO.Sockets.Crypto
 
         public long LongValue()
         {
-            long val = 0;
-
-            val = _data[0];
+            long val = _data[0];
             try
             {       // exception if maxLength = 1
                 val |= (long)_data[1] << 32;
@@ -2528,7 +2526,7 @@ namespace Universal.IO.Sockets.Crypto
             if ((numBits & 0x1) != 0)        // odd number of bits
                 numBits = (numBits >> 1) + 1;
             else
-                numBits = numBits >> 1;
+                numBits >>= 1;
 
             var bytePos = numBits >> 5;
             var bitPos = (byte)(numBits & 0x1F);
@@ -2615,7 +2613,7 @@ namespace Universal.IO.Sockets.Crypto
             constant._data[nLen] = 0x00000001;
             constant.DataLength = nLen + 1;
 
-            constant = constant / n;
+            constant /= n;
 
             // calculate values of s and t
             var s = 0;
@@ -2749,14 +2747,6 @@ namespace Universal.IO.Sockets.Crypto
             result[2] = qK;
 
             return result;
-        }
-
-        public void Dispose()
-        {
-            _data = new uint[0];
-            _data = null;
-            GC.Collect();
-            GC.Collect();
         }
     }
 }

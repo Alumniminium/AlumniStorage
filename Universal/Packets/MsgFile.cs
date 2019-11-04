@@ -11,9 +11,8 @@ namespace Universal.Packets
     {
         public const int TOKEN_LENGTH = 32;
         public const int MAX_CHUNK_SIZE = 65400;
-        public int Length;
-        public bool Compressed;
-        public PacketType Id;
+
+        public MsgHeader Header;
         public bool CreateFile;
         public long FileSize;
         public int ChunkSize;
@@ -48,9 +47,9 @@ namespace Universal.Packets
         {
             var ptr = stackalloc MsgFile[1];
 
-            ptr->Length = sizeof(MsgFile);
-            ptr->Compressed = false;
-            ptr->Id = PacketType.MsgFile;
+            ptr->Header.Length = sizeof(MsgFile);
+            ptr->Header.Compressed = false;
+            ptr->Header.Id = PacketType.MsgFile;
 
             ptr->FileSize = size;
             ptr->ChunkSize = chunkSize;

@@ -1,7 +1,7 @@
 using System;
 using System.Security.Cryptography;
 
-namespace Universal.IO.Sockets.Crypto
+namespace Universal.IO.Sockets.Cryptography
 {
     public static class CryptoRandom
     {

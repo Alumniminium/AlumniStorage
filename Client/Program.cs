@@ -8,7 +8,7 @@ using Client.Entities;
 using Universal.IO.FastConsole;
 using System.Threading.Tasks;
 using Client.Packethandlers;
-using Universal.IO.Sockets.Crypto;
+using Universal.IO.Sockets.Cryptography;
 
 namespace Client
 {

@@ -9,9 +9,8 @@ namespace Universal.Packets
     public unsafe struct MsgToken
     {
         public const int MAX_TOKEN_LENGTH = 32;
-        public int Length { get; set; }
-        public bool Compressed { get; set; }
-        public PacketType Id { get; set; }
+
+        public MsgHeader Header;
         public int UniqueId { get; set; }
         public fixed char Token[MAX_TOKEN_LENGTH];
 
@@ -34,9 +33,9 @@ namespace Universal.Packets
         public static MsgToken Create(string token, int uniqueId, bool compression)
         {
             var ptr = stackalloc MsgToken[1];
-            ptr->Length = sizeof(MsgToken);
-            ptr->Compressed = compression;
-            ptr->Id = PacketType.MsgToken;
+            ptr->Header.Length = sizeof(MsgToken);
+            ptr->Header.Compressed = compression;
+            ptr->Header.Id = PacketType.MsgToken;
             ptr->UniqueId = uniqueId;
             ptr->SetToken(token);
 

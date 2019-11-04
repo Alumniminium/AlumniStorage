@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Channels;
 using Universal.IO.Sockets.Client;
 using System.Buffers;
+using Universal.Packets;
 
 namespace Universal.IO.Sockets.Queues
 {
@@ -12,12 +13,12 @@ namespace Universal.IO.Sockets.Queues
         private static readonly Thread WorkerThread;
         private const int MIN_HEADER_SIZE = 4;
         private const int COMPRESSION_FLAG_OFFSET = 4;
-        private static readonly ChannelWriter<SocketAsyncEventArgs> Writer;
-        private static readonly ChannelReader<SocketAsyncEventArgs> Reader;
+        private static readonly ChannelWriter<ClientSocket> Writer;
+        private static readonly ChannelReader<ClientSocket> Reader;
 
         static ReceiveQueue()
         {
-            var channel = Channel.CreateUnbounded<SocketAsyncEventArgs>(new UnboundedChannelOptions() { SingleReader = true });
+            var channel = Channel.CreateUnbounded<ClientSocket>(new UnboundedChannelOptions() { SingleReader = true });
             Reader = channel.Reader;
             Writer = channel.Writer;
             WorkerThread = new Thread(WorkLoop)
@@ -27,23 +28,21 @@ namespace Universal.IO.Sockets.Queues
             };
             WorkerThread.Start();
         }
-        public static void Add(SocketAsyncEventArgs e) => Writer.TryWrite(e);
+        public static void Add(ClientSocket clientSocket) => Writer.TryWrite(clientSocket);
         public static async void WorkLoop()
         {
             while (await Reader.WaitToReadAsync())
             {
-                while (Reader.TryRead(out var e))
+                while (Reader.TryRead(out var clientSocket))
                 {
-                    var clientSocket = (ClientSocket)e.UserToken;
-                    AssemblePacket(clientSocket, e);
-
-                    clientSocket.RecycleSaea(e);
+                    AssemblePacket(clientSocket);
                     clientSocket.Receive();
                 }
             }
         }
-        private static void AssemblePacket(ClientSocket connection, SocketAsyncEventArgs e)
+        private static void AssemblePacket(ClientSocket connection)
         {
+            var e = connection.ReceiveArgs;
             while (connection.Buffer.BytesProcessed != e.BytesTransferred)
             {
                 if (connection.Buffer.BytesInBuffer == 0)
@@ -90,7 +89,7 @@ namespace Universal.IO.Sockets.Queues
             connection.Buffer.BytesInBuffer += count;
             connection.Buffer.BytesProcessed += count;
         }
-        private static void FinishPacket(ClientSocket connection)
+        private static unsafe void FinishPacket(ClientSocket connection)
         {
             if (connection.Buffer.MergeBuffer[COMPRESSION_FLAG_OFFSET] == 1)
                 connection.Buffer.Decompress();
@@ -100,12 +99,14 @@ namespace Universal.IO.Sockets.Queues
 
             if (connection.Crypto != null)
             {
-                connection.Crypto.IV = packet.AsSpan().Slice(connection.Buffer.BytesRequired - 16,16).ToArray();
-                var decryptedPacket = connection.Crypto.CreateDecryptor().TransformFinalBlock(packet, 6, connection.Buffer.BytesRequired-22);
-                decryptedPacket.CopyTo(packet.AsSpan().Slice(6));
-            }
-            connection.OnPacket?.Invoke(connection, packet);
+                var iv = packet.AsSpan().Slice(MsgHeader.IV_OFFSET, 16).ToArray();
+                connection.Crypto.SetIV(iv);
 
+                var decryptedPacket = connection.Crypto.Decrypt(packet.AsSpan().Slice(sizeof(MsgHeader),connection.Buffer.BytesRequired- sizeof(MsgHeader)).ToArray());
+                decryptedPacket.CopyTo(packet.AsSpan().Slice(sizeof(MsgHeader)));
+            }
+
+            connection.OnPacket?.Invoke(connection, packet);
             ArrayPool<byte>.Shared.Return(packet);
 
             connection.Buffer.BytesInBuffer = 0;
